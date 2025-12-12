@@ -31,6 +31,7 @@ jobs:
         run: |
           rm package-lock.json
           npm install
+          npm install --no-save lightningcss-linux-x64-gnu
 
       - name: Build
         run: npm run build
