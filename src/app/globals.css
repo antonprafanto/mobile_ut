@@ -59,12 +59,12 @@
 
 @layer base {
   * {
-    border-color: var(--border);
+    border-color: hsl(var(--border));
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
@@ -80,6 +80,31 @@
 
   p {
     @apply leading-relaxed;
+  }
+
+  /* Prose Dark Mode Fix */
+  .dark .prose h1,
+  .dark .prose h2,
+  .dark .prose h3,
+  .dark .prose h4,
+  .dark .prose h5,
+  .dark .prose h6 {
+    @apply text-white;
+  }
+
+  .dark .prose p,
+  .dark .prose li,
+  .dark .prose td,
+  .dark .prose th {
+    @apply text-gray-300;
+  }
+
+  .dark .prose strong {
+    @apply text-white;
+  }
+
+  .dark .prose code {
+    @apply text-gray-200;
   }
 }
 

@@ -38,7 +38,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
                 if (depth === 2) {
                     return `
-                        <h2 id="${slug}" class="group flex items-center gap-3 text-2xl font-bold text-foreground mt-12 mb-6 pb-4 border-b border-border/50">
+                        <h2 id="${slug}" class="group flex items-center gap-3 text-2xl font-bold text-foreground dark:text-white mt-12 mb-6 pb-4 border-b border-border/50">
                             <span class="w-1.5 h-8 bg-primary rounded-full"></span>
                             ${text}
                             <a href="#${slug}" class="opacity-0 group-hover:opacity-100 transition-opacity text-primary ml-2">#</a>
@@ -48,7 +48,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
                 if (depth === 3) {
                     return `
-                        <h3 id="${slug}" class="text-xl font-bold text-foreground mt-8 mb-4 flex items-center gap-2">
+                        <h3 id="${slug}" class="text-xl font-bold text-foreground dark:text-white mt-8 mb-4 flex items-center gap-2">
                             <span class="text-primary/60">#</span>
                             ${text}
                         </h3>
