@@ -1,0 +1,525 @@
+# Navigation
+
+Navigation adalah salah satu aspek terpenting dalam aplikasi mobile. Module ini akan mengajarkan berbagai pattern navigasi di Ionic.
+
+## Angular Router Basics
+
+Ionic menggunakan Angular Router untuk navigasi. Router sudah dikonfigurasi di `app.routes.ts`.
+
+### Basic Navigation
+
+```typescript
+// app.routes.ts
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full'
+  },
+  {
+    path: 'home',
+    loadComponent: () => import('./pages/home/home.page').then(m => m.HomePage)
+  },
+  {
+    path: 'about',
+    loadComponent: () => import('./pages/about/about.page').then(m => m.AboutPage)
+  },
+  {
+    path: 'products/:id',
+    loadComponent: () => import('./pages/product-detail/product-detail.page').then(m => m.ProductDetailPage)
+  }
+];
+```
+
+### Navigasi Programmatic
+
+```typescript
+import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
+
+export class HomePage {
+  constructor(
+    private router: Router,
+    private navCtrl: NavController
+  ) {}
+
+  // Method 1: Angular Router
+  goToAbout() {
+    this.router.navigate(['/about']);
+  }
+
+  // Method 2: NavController (Recommended untuk Ionic)
+  goToProducts() {
+    this.navCtrl.navigateForward('/products');
+  }
+
+  // Dengan parameter
+  viewProduct(id: number) {
+    this.navCtrl.navigateForward(`/products/${id}`);
+  }
+
+  // Dengan query params
+  searchProducts() {
+    this.navCtrl.navigateForward('/products', {
+      queryParams: { category: 'electronics', sort: 'price' }
+    });
+  }
+
+  // Navigate back
+  goBack() {
+    this.navCtrl.back();
+  }
+}
+```
+
+### Navigation di Template
+
+```html
+<!-- Menggunakan routerLink -->
+<ion-button routerLink="/about">About</ion-button>
+<ion-button [routerLink]="['/products', productId]">View Product</ion-button>
+
+<!-- Dengan query params -->
+<ion-button [routerLink]="['/search']" [queryParams]="{q: 'ionic'}">
+  Search
+</ion-button>
+
+<!-- Navigate back -->
+<ion-button (click)="navCtrl.back()">
+  <ion-icon name="arrow-back"></ion-icon>
+  Back
+</ion-button>
+```
+
+## Tabs Navigation
+
+Tabs adalah pattern navigasi paling umum untuk bottom navigation.
+
+### Setup Tabs
+
+```bash
+ionic generate page tabs/tabs --skip-tests
+ionic generate page tabs/tab1 --skip-tests
+ionic generate page tabs/tab2 --skip-tests
+ionic generate page tabs/tab3 --skip-tests
+```
+
+### tabs.routes.ts
+
+```typescript
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: 'tabs',
+    loadComponent: () => import('./tabs.page').then(m => m.TabsPage),
+    children: [
+      {
+        path: 'tab1',
+        loadComponent: () => import('./tab1/tab1.page').then(m => m.Tab1Page)
+      },
+      {
+        path: 'tab2',
+        loadComponent: () => import('./tab2/tab2.page').then(m => m.Tab2Page)
+      },
+      {
+        path: 'tab3',
+        loadComponent: () => import('./tab3/tab3.page').then(m => m.Tab3Page)
+      },
+      {
+        path: '',
+        redirectTo: 'tab1',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  {
+    path: '',
+    redirectTo: 'tabs',
+    pathMatch: 'full'
+  }
+];
+```
+
+### tabs.page.html
+
+```html
+<ion-tabs>
+  <ion-tab-bar slot="bottom">
+    <ion-tab-button tab="tab1">
+      <ion-icon name="home"></ion-icon>
+      <ion-label>Home</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="tab2">
+      <ion-icon name="search"></ion-icon>
+      <ion-label>Search</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="tab3">
+      <ion-icon name="person"></ion-icon>
+      <ion-label>Profile</ion-label>
+      <ion-badge color="danger">3</ion-badge>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>
+```
+
+### Tabs Styling
+
+```scss
+// tabs.page.scss
+ion-tab-bar {
+  --background: var(--ion-color-primary);
+  --color: rgba(255, 255, 255, 0.6);
+  --color-selected: #ffffff;
+  
+  ion-tab-button {
+    --ripple-color: rgba(255, 255, 255, 0.2);
+    
+    &.tab-selected {
+      ion-icon {
+        transform: translateY(-2px);
+        transition: transform 0.3s;
+      }
+    }
+  }
+}
+```
+
+## Side Menu Navigation
+
+Side menu berguna untuk navigation drawer atau settings menu.
+
+### Setup Menu
+
+```bash
+ionic generate component components/menu
+```
+
+### app.component.html
+
+```html
+<ion-app>
+  <ion-split-pane contentId="main-content">
+    <!-- Menu -->
+    <ion-menu contentId="main-content" type="overlay">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Menu</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      
+      <ion-content>
+        <ion-list>
+          <ion-menu-toggle auto-hide="false" *ngFor="let page of appPages">
+            <ion-item 
+              button 
+              [routerLink]="page.url" 
+              routerDirection="root"
+              [class.selected]="selectedPath === page.url">
+              <ion-icon slot="start" [name]="page.icon"></ion-icon>
+              <ion-label>{{ page.title }}</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+        </ion-list>
+        
+        <ion-list>
+          <ion-list-header>Account</ion-list-header>
+          <ion-menu-toggle>
+            <ion-item button (click)="logout()">
+              <ion-icon slot="start" name="log-out"></ion-icon>
+              <ion-label>Logout</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+        </ion-list>
+      </ion-content>
+    </ion-menu>
+
+    <!-- Main Content -->
+    <ion-router-outlet id="main-content"></ion-router-outlet>
+  </ion-split-pane>
+</ion-app>
+```
+
+### app.component.ts
+
+```typescript
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+
+export class AppComponent {
+  selectedPath = '';
+  
+  appPages = [
+    { title: 'Home', url: '/home', icon: 'home' },
+    { title: 'Products', url: '/products', icon: 'cart' },
+    { title: 'Orders', url: '/orders', icon: 'list' },
+    { title: 'Settings', url: '/settings', icon: 'settings' }
+  ];
+
+  constructor(private router: Router) {
+    this.router.events.subscribe(() => {
+      this.selectedPath = this.router.url;
+    });
+  }
+
+  logout() {
+    // Logout logic
+    this.router.navigate(['/login']);
+  }
+}
+```
+
+### Toggle Menu dari Page
+
+```typescript
+import { MenuController } from '@ionic/angular';
+
+export class HomePage {
+  constructor(private menu: MenuController) {}
+
+  openMenu() {
+    this.menu.open();
+  }
+
+  closeMenu() {
+    this.menu.close();
+  }
+
+  toggleMenu() {
+    this.menu.toggle();
+  }
+}
+```
+
+```html
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Home</ion-title>
+  </ion-toolbar>
+</ion-header>
+```
+
+## Stack Navigation
+
+Untuk detail pages, gunakan stack navigation.
+
+### Passing Data
+
+**Method 1: Route Parameters**
+
+```typescript
+// Navigate dengan ID
+this.navCtrl.navigateForward(`/products/${productId}`);
+
+// Receive di destination page
+import { ActivatedRoute } from '@angular/router';
+
+export class ProductDetailPage implements OnInit {
+  productId: string;
+
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit() {
+    this.productId = this.route.snapshot.paramMap.get('id')!;
+    this.loadProduct(this.productId);
+  }
+}
+```
+
+**Method 2: Navigation Extras (State)**
+
+```typescript
+// Send data
+this.navCtrl.navigateForward('/product-detail', {
+  state: {
+    product: {
+      id: 1,
+      name: 'Laptop',
+      price: 15000000
+    }
+  }
+});
+
+// Receive data
+import { Router } from '@angular/router';
+
+export class ProductDetailPage {
+  product: any;
+
+  constructor(private router: Router) {
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras.state) {
+      this.product = navigation.extras.state['product'];
+    }
+  }
+}
+```
+
+**Method 3: Service (Recommended untuk complex data)**
+
+```typescript
+// data.service.ts
+@Injectable({ providedIn: 'root' })
+export class DataService {
+  private selectedProduct: any;
+
+  setProduct(product: any) {
+    this.selectedProduct = product;
+  }
+
+  getProduct() {
+    return this.selectedProduct;
+  }
+}
+
+// From list page
+constructor(private dataService: DataService) {}
+
+viewProduct(product: any) {
+  this.dataService.setProduct(product);
+  this.navCtrl.navigateForward('/product-detail');
+}
+
+// In detail page
+ngOnInit() {
+  this.product = this.dataService.getProduct();
+}
+```
+
+## Navigation Guards
+
+Protect routes dengan guards (authentication, etc).
+
+```typescript
+// auth.guard.ts
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from './auth.service';
+
+export const authGuard = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+
+  router.navigate(['/login']);
+  return false;
+};
+
+// app.routes.ts
+{
+  path: 'profile',
+  loadComponent: () => import('./profile/profile.page').then(m => m.ProfilePage),
+  canActivate: [authGuard]
+}
+```
+
+## Page Transitions
+
+### Custom Animations
+
+```typescript
+import { NavController } from '@ionic/angular';
+import { AnimationController } from '@ionic/angular';
+
+export class HomePage {
+  constructor(
+    private navCtrl: NavController,
+    private animationCtrl: AnimationController
+  ) {}
+
+  async navigateWithCustomAnimation() {
+    const animation = this.animationCtrl.create()
+      .addElement(document.querySelector('.page-to-animate')!)
+      .duration(500)
+      .fromTo('opacity', '0', '1')
+      .fromTo('transform', 'translateX(100px)', 'translateX(0)');
+
+    await this.navCtrl.navigateForward('/about', {
+      animation
+    });
+  }
+}
+```
+
+## Deep Linking
+
+Setup untuk handle external links.
+
+```typescript
+// capacitor.config.ts
+{
+  appId: 'com.myapp',
+  appName: 'MyApp',
+  plugins: {
+    App: {
+      deeplinks: [
+        { scheme: 'myapp', path: '/products/:id' }
+      ]
+    }
+  }
+}
+
+// Handle deep link
+import { App } from '@capacitor/app';
+
+App.addListener('appUrlOpen', (event) => {
+  const url = event.url;
+  // Parse and navigate
+  // Example: myapp://products/123
+  const slug = url.split('/').pop();
+  this.router.navigate(['/products', slug]);
+});
+```
+
+## Best Practices
+
+1. **Use NavController** untuk Ionic-specific animations
+2. **Lazy Loading** untuk performa optimal
+3. **Clear Navigation Stack** saat logout:
+   ```typescript
+   this.navCtrl.navigateRoot('/login');
+   ```
+4. **Handle Back Button** di Android:
+   ```typescript
+   import { Platform } from '@ionic/angular';
+   
+   constructor(private platform: Platform) {
+     this.platform.backButton.subscribeWithPriority(10, () => {
+       // Custom back button logic
+     });
+   }
+   ```
+
+## Practical Example: E-Commerce Navigation
+
+```typescript
+// Example structure
+routes = [
+  { path: '', component: TabsPage, children: [
+    { path: 'home', component: HomePage },
+    { path: 'categories', component: CategoriesPage },
+    { path: 'cart', component: CartPage },
+    { path: 'profile', component: ProfilePage }
+  ]},
+  { path: 'product/:id', component: ProductDetailPage },
+  { path: 'checkout', component: CheckoutPage, canActivate: [authGuard] },
+  { path: 'order-success', component: OrderSuccessPage }
+];
+
+// Navigation flow
+// Home -> Product Detail -> Add to Cart -> Checkout -> Success
+```
+
+---
+
+**Next:** Module 06 - Forms & Validation! 📝

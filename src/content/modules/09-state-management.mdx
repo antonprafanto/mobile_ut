@@ -1,0 +1,550 @@
+# State Management
+
+Seiring aplikasi berkembang, managing state menjadi penting. Module ini mengajarkan berbagai pattern dan best practices untuk state management.
+
+## Why State Management?
+
+**Problems without proper state management:**
+- Data inconsistency across components
+- Difficult to track data flow
+- Hard to debug
+- Prop drilling
+
+**Benefits:**
+- Single source of truth
+- Predictable state changes
+- Easier debugging
+- Better testing
+
+## Service-Based State Management
+
+### Simple State Service
+
+```typescript
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+
+export interface AppState {
+  user: User | null;
+  cart: Product[];
+  theme: 'light' | 'dark';
+}
+
+@Injectable({ providedIn: 'root' })
+export class StateService {
+  private state: AppState = {
+    user: null,
+    cart: [],
+    theme: 'light'
+  };
+
+  // BehaviorSubject untuk reactive state
+  private state$ = new BehaviorSubject<AppState>(this.state);
+
+  // Public observable
+  getState(): Observable<AppState> {
+    return this.state$.asObservable();
+  }
+
+  // Get current state
+  getCurrentState(): AppState {
+    return this.state$.value;
+  }
+
+  // Update state
+  setState(newState: Partial<AppState>) {
+    this.state = { ...this.state, ...newState };
+    this.state$.next(this.state);
+  }
+}
+```
+
+### Feature-Specific Services
+
+```typescript
+// user.service.ts
+@Injectable({ providedIn: 'root' })
+export class UserService {
+  private userSubject = new BehaviorSubject<User | null>(null);
+  user$ = this.userSubject.asObservable();
+
+  get currentUser(): User | null {
+    return this.userSubject.value;
+  }
+
+  setUser(user: User) {
+    this.userSubject.next(user);
+    // Persist to storage
+    Preferences.set({ key: 'user', value: JSON.stringify(user) });
+  }
+
+  async loadUser() {
+    const { value } = await Preferences.get({ key: 'user' });
+    if (value) {
+      this.userSubject.next(JSON.parse(value));
+    }
+  }
+
+  logout() {
+    this.userSubject.next(null);
+    Preferences.remove({ key: 'user' });
+  }
+
+  updateProfile(updates: Partial<User>) {
+    const currentUser = this.currentUser;
+    if (currentUser) {
+      const updated = { ...currentUser, ...updates };
+      this.setUser(updated);
+    }
+  }
+}
+
+// cart.service.ts
+@Injectable({ providedIn: 'root' })
+export class CartService {
+  private cartSubject = new BehaviorSubject<CartItem[]>([]);
+  cart$ = this.cartSubject.asObservable();
+
+  get items(): CartItem[] {
+    return this.cartSubject.value;
+  }
+
+  get count$(): Observable<number> {
+    return this.cart$.pipe(
+      map(items => items.reduce((sum, item) => sum + item.quantity, 0))
+    );
+  }
+
+  get total$(): Observable<number> {
+    return this.cart$.pipe(
+      map(items => items.reduce((sum, item) => sum + (item.price * item.quantity), 0))
+    );
+  }
+
+  addItem(product: Product, quantity: number = 1) {
+    const currentCart = this.items;
+    const existingItem = currentCart.find(item => item.productId === product.id);
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+      this.cartSubject.next([...currentCart]);
+    } else {
+      this.cartSubject.next([
+        ...currentCart,
+        {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          quantity,
+          image: product.image
+        }
+      ]);
+    }
+
+    this.saveCart();
+  }
+
+  removeItem(productId: number) {
+    const updated = this.items.filter(item => item.productId !== productId);
+    this.cartSubject.next(updated);
+    this.saveCart();
+  }
+
+  updateQuantity(productId: number, quantity: number) {
+    const currentCart = this.items;
+    const item = currentCart.find(i => i.productId === productId);
+    
+    if (item) {
+      item.quantity = quantity;
+      this.cartSubject.next([...currentCart]);
+      this.saveCart();
+    }
+  }
+
+  clear() {
+    this.cartSubject.next([]);
+    this.saveCart();
+  }
+
+  private async saveCart() {
+    await Preferences.set({
+      key: 'cart',
+      value: JSON.stringify(this.items)
+    });
+  }
+
+  async loadCart() {
+    const { value } = await Preferences.get({ key: 'cart' });
+    if (value) {
+      this.cartSubject.next(JSON.parse(value));
+    }
+  }
+}
+```
+
+### Using in Components
+
+```typescript
+export class ProductDetailPage {
+  product$!: Observable<Product>;
+  cartCount$ = this.cartService.count$;
+
+  constructor(
+    private cartService: CartService,
+    private userService: UserService
+  ) {}
+
+  ngOnInit() {
+    this.loadProduct();
+  }
+
+  async addToCart() {
+    if (!this.userService.currentUser) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.cartService.addItem(this.product, 1);
+    
+    const toast = await this.toastCtrl.create({
+      message: 'Added to cart',
+      duration: 2000,
+      color: 'success'
+    });
+    await toast.present();
+  }
+}
+```
+
+```html
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Product</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon name="cart"></ion-icon>
+        <ion-badge color="danger">{{ cartCount$ | async }}</ion-badge>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+```
+
+## Facade Pattern
+
+Combine multiple services into a unified API.
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class AppFacade {
+  // Expose observables
+  user$ = this.userService.user$;
+  cart$ = this.cartService.cart$;
+  cartCount$ = this.cartService.count$;
+  cartTotal$ = this.cartService.total$;
+
+  constructor(
+    private userService: UserService,
+    private cartService: CartService,
+    private productService: ProductService
+  ) {}
+
+  // User actions
+  async login(email: string, password: string) {
+    const user = await this.userService.login(email, password);
+    await this.cartService.loadCart();
+    return user;
+  }
+
+  logout() {
+    this.userService.logout();
+    this.cartService.clear();
+  }
+
+  // Cart actions
+  addToCart(product: Product, quantity: number = 1) {
+    this.cartService.addItem(product, quantity);
+  }
+
+  removeFromCart(productId: number) {
+    this.cartService.removeItem(productId);
+  }
+
+  async checkout() {
+    const user = this.userService.currentUser;
+    const cart = this.cartService.items;
+
+    if (!user || cart.length === 0) {
+      throw new Error('Cannot checkout');
+    }
+
+    // Process order
+    const order = await this.productService.createOrder({
+      userId: user.id,
+      items: cart
+    });
+
+    this.cartService.clear();
+    return order;
+  }
+
+  // Product actions
+  getProducts() {
+    return this.productService.getProducts();
+  }
+
+  searchProducts(query: string) {
+    return this.productService.search(query);
+  }
+}
+
+// Usage in component
+export class HomePage {
+  products$ = this.facade.getProducts();
+  cartCount$ = this.facade.cartCount$;
+  user$ = this.facade.user$;
+
+  constructor(private facade: AppFacade) {}
+
+  addToCart(product: Product) {
+    this.facade.addToCart(product);
+  }
+}
+```
+
+## Advanced RxJS Patterns
+
+### Combining Streams
+
+```typescript
+export class DashboardPage implements OnInit {
+  vm$!: Observable<DashboardViewModel>;
+
+  constructor(
+    private userService: UserService,
+    private orderService: OrderService,
+    private statsService: StatsService
+  ) {}
+
+  ngOnInit() {
+    // Combine multiple observables
+    this.vm$ = combineLatest([
+      this.userService.user$,
+      this.orderService.recentOrders$,
+      this.statsService.stats$
+    ]).pipe(
+      map(([user, orders, stats]) => ({
+        user,
+        orders,
+        stats,
+        greeting: this.getGreeting(user?.name)
+      }))
+    );
+  }
+
+  private getGreeting(name?: string): string {
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'Good morning' : 
+                        hour < 18 ? 'Good afternoon' : 'Good evening';
+    return `${timeGreeting}${name ? ', ' + name : ''}`;
+  }
+}
+```
+
+```html
+<ng-container *ngIf="vm$ | async as vm">
+  <h1>{{ vm.greeting }}</h1>
+  
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>{{ vm.stats.totalOrders }} Orders</ion-card-title>
+    </ion-card-header>
+  </ion-card>
+
+  <ion-list>
+    <ion-item *ngFor="let order of vm.orders">
+      {{ order.title }}
+    </ion-item>
+  </ion-list>
+</ng-container>
+```
+
+### Derived State
+
+```typescript
+export class ProductListPage {
+  private searchQuery$ = new BehaviorSubject<string>('');
+  private sortBy$ = new BehaviorSubject<'name' | 'price'>('name');
+  private products$ = this.productService.getProducts();
+
+  // Derived observable
+  filteredProducts$ = combineLatest([
+    this.products$,
+    this.searchQuery$,
+    this.sortBy$
+  ]).pipe(
+    map(([products, query, sortBy]) => {
+      let filtered = products;
+
+      // Filter
+      if (query) {
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+
+      // Sort
+      if (sortBy === 'name') {
+        filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        filtered = filtered.sort((a, b) => a.price - b.price);
+      }
+
+      return filtered;
+    })
+  );
+
+  onSearch(query: string) {
+    this.searchQuery$.next(query);
+  }
+
+  onSortChange(sortBy: 'name' | 'price') {
+    this.sortBy$.next(sortBy);
+  }
+}
+```
+
+### Loading & Error States
+
+```typescript
+export interface LoadingState<T> {
+  loading: boolean;
+  data: T | null;
+  error: string | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProductStateService {
+  private state$ = new BehaviorSubject<LoadingState<Product[]>>({
+    loading: false,
+    data: null,
+    error: null
+  });
+
+  products$ = this.state$.asObservable();
+
+  constructor(private http: HttpClient) {}
+
+  loadProducts() {
+    this.state$.next({
+      loading: true,
+      data: null,
+      error: null
+    });
+
+    this.http.get<Product[]>('/api/products').subscribe({
+      next: (products) => {
+        this.state$.next({
+          loading: false,
+          data: products,
+          error: null
+        });
+      },
+      error: (error) => {
+        this.state$.next({
+          loading: false,
+          data: null,
+          error: error.message
+        });
+      }
+    });
+  }
+}
+```
+
+```html
+<ng-container *ngIf="products$ | async as state">
+  <ion-spinner *ngIf="state.loading"></ion-spinner>
+  
+  <div *ngIf="state.error" class="error">
+    {{ state.error }}
+  </div>
+
+  <ion-list *ngIf="state.data">
+    <ion-item *ngFor="let product of state.data">
+      {{ product.name }}
+    </ion-item>
+  </ion-list>
+</ng-container>
+```
+
+## Persistence Strategy
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class PersistenceService {
+  private readonly STORAGE_KEYS = {
+    USER: 'user',
+    CART: 'cart',
+    SETTINGS: 'settings'
+  };
+
+  async saveState(key: string, state: any) {
+    await Preferences.set({
+      key,
+      value: JSON.stringify(state)
+    });
+  }
+
+  async loadState<T>(key: string): Promise<T | null> {
+    const { value } = await Preferences.get({ key });
+    return value ? JSON.parse(value) : null;
+  }
+
+  async clearState(key: string) {
+    await Preferences.remove({ key });
+  }
+
+  async clearAllState() {
+    await Preferences.clear();
+  }
+}
+
+// Auto-persist
+export class CartService {
+  constructor(
+    private persistence: PersistenceService
+  ) {
+    this.loadCart();
+    
+    // Auto-save on changes
+    this.cart$.pipe(
+      debounceTime(500),
+      distinctUntilChanged()
+    ).subscribe(cart => {
+      this.persistence.saveState('cart', cart);
+    });
+  }
+
+  async loadCart() {
+    const saved = await this.persistence.loadState<CartItem[]>('cart');
+    if (saved) {
+      this.cartSubject.next(saved);
+    }
+  }
+}
+```
+
+## Best Practices
+
+1. **Single Source of Truth** - One service per domain
+2. **Immutable Updates** - Always create new objects
+3. **Use Observables** for reactive updates
+4. **Unsubscribe** - Use AsyncPipe or takeUntil
+5. **Persist Critical Data** to survive app restarts
+6. **Type Safety** - Use interfaces for state shapes
+7. **Keep Services Lean** - Move complex logic to separate classes
+
+---
+
+**Next:** Module 10 - Deployment! 🚀

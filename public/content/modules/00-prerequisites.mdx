@@ -1,0 +1,564 @@
+# Prerequisites - Persiapan Dasar
+
+**Selamat datang!** Module ini dirancang khusus untuk **pemula yang sama sekali belum pernah programming**. Jangan khawatir, kita mulai dari NOL! 😊
+
+## Apa yang Anda Butuhkan?
+
+### Mindset yang Benar
+
+1. **Programming itu seperti menulis resep masakan**
+   - Ada langkah-langkah (instruksi)
+   - Ada bahan-bahan (data)
+   - Ada hasil akhir (output)
+
+2. **Error adalah hal NORMAL**
+   - Programmer profesional juga buat error setiap hari
+   - Error adalah cara kita belajar
+   - Google adalah teman terbaik programmer!
+
+3. **Tidak perlu hafal semua**
+   - Yang penting paham konsep
+   - Google/documentation selalu ada
+   - Practice makes perfect
+
+## Bagian 1: Terminal/Command Line Basics
+
+Terminal adalah cara kita "ngobrol" dengan komputer menggunakan teks.
+
+### Membuka Terminal
+
+**Windows:**
+- Tekan `Windows + R`
+- Ketik `cmd` atau `powershell`
+- Enter
+
+**Mac:**
+- Tekan `Cmd + Space`
+- Ketik `terminal`
+- Enter
+
+### Perintah Dasar
+
+```bash
+# Lihat folder saat ini
+pwd
+
+# Lihat isi folder
+dir        # Windows
+ls         # Mac/Linux
+
+# Pindah folder
+cd Documents
+cd ..      # Kembali ke folder sebelumnya
+
+# Buat folder baru
+mkdir nama-folder
+
+# Buat file baru
+touch nama-file.txt    # Mac/Linux
+type nul > nama-file.txt   # Windows
+```
+
+**Practice:**
+```bash
+# 1. Buat folder "belajar-coding"
+mkdir belajar-coding
+
+# 2. Masuk ke folder tersebut
+cd belajar-coding
+
+# 3. Lihat isi folder (harusnya kosong)
+dir
+```
+
+## Bagian 2: JavaScript Basics
+
+JavaScript adalah bahasa pemrograman yang kita pakai untuk Ionic.
+
+### 1. Variables (Wadah Data)
+
+Bayangkan variable seperti **kotak** yang bisa isi dengan apapun.
+
+```javascript
+// Membuat variable
+let nama = "Budi";
+let umur = 20;
+let mahasiswa = true;
+
+// Menampilkan ke console
+console.log(nama);      // Output: Budi
+console.log(umur);      // Output: 20
+```
+
+**Analogi:**
+- `let` = Label yang kita tempel di kotak
+- `nama` = Nama kotak
+- `"Budi"` = Isi kotak
+
+**Tipe Data:**
+```javascript
+// String (teks) - pakai tanda petik
+let nama = "Budi";
+let alamat = 'Jakarta';
+
+// Number (angka) - tanpa petik
+let umur = 20;
+let tinggi = 170.5;
+
+// Boolean (benar/salah) - true atau false
+let sudahMenikah = false;
+let aktif = true;
+
+// Array (kumpulan data)
+let hobi = ["membaca", "gaming", "olahraga"];
+let angka = [1, 2, 3, 4, 5];
+
+// Object (data kompleks)
+let mahasiswa = {
+  nama: "Budi",
+  umur: 20,
+  jurusan: "Informatika"
+};
+```
+
+### 2. Functions (Fungsi)
+
+Function adalah **resep** yang bisa dipakai berulang kali.
+
+```javascript
+// Membuat function
+function sapa(nama) {
+  console.log("Halo, " + nama + "!");
+}
+
+// Menggunakan function
+sapa("Budi");        // Output: Halo, Budi!
+sapa("Ani");         // Output: Halo, Ani!
+
+// Function dengan return
+function tambah(a, b) {
+  return a + b;
+}
+
+let hasil = tambah(5, 3);
+console.log(hasil);  // Output: 8
+```
+
+**Analogi:**
+```javascript
+// Function = Mesin pembuat jus
+function buatJus(buah) {
+  return "Jus " + buah;
+}
+
+let jus1 = buatJus("Jeruk");   // "Jus Jeruk"
+let jus2 = buatJus("Apel");    // "Jus Apel"
+```
+
+### 3. Conditions (If/Else)
+
+Membuat keputusan dalam code.
+
+```javascript
+let umur = 17;
+
+if (umur >= 18) {
+  console.log("Boleh buat SIM");
+} else {
+  console.log("Belum boleh buat SIM");
+}
+
+// Multiple conditions
+let nilai = 85;
+
+if (nilai >= 90) {
+  console.log("Grade: A");
+} else if (nilai >= 80) {
+  console.log("Grade: B");
+} else if (nilai >= 70) {
+  console.log("Grade: C");
+} else {
+  console.log("Grade: D");
+}
+```
+
+### 4. Loops (Pengulangan)
+
+Melakukan sesuatu berulang kali.
+
+```javascript
+// For loop - tau berapa kali ngulang
+for (let i = 1; i <= 5; i++) {
+  console.log("Nomor " + i);
+}
+// Output:
+// Nomor 1
+// Nomor 2
+// Nomor 3
+// Nomor 4
+// Nomor 5
+
+// Loop array
+let buah = ["Apel", "Jeruk", "Mangga"];
+
+for (let i = 0; i < buah.length; i++) {
+  console.log(buah[i]);
+}
+
+// Cara lebih mudah
+buah.forEach(function(item) {
+  console.log(item);
+});
+```
+
+### 5. Arrow Functions (Modern Way)
+
+Cara baru menulis function yang lebih singkat.
+
+```javascript
+// Cara lama
+function tambah(a, b) {
+  return a + b;
+}
+
+// Cara baru (arrow function)
+const tambah = (a, b) => {
+  return a + b;
+};
+
+// Lebih singkat lagi (kalau cuma 1 statement)
+const tambah = (a, b) => a + b;
+
+// Contoh penggunaan
+let angka = [1, 2, 3, 4, 5];
+
+// Kalikan semua dengan 2
+let hasilKali = angka.map(num => num * 2);
+console.log(hasilKali);  // [2, 4, 6, 8, 10]
+```
+
+## Bagian 3: HTML Basics
+
+HTML adalah struktur halaman web (seperti kerangka rumah).
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Halaman Saya</title>
+</head>
+<body>
+  <!-- Heading (judul) -->
+  <h1>Judul Besar</h1>
+  <h2>Judul Sedang</h2>
+  
+  <!-- Paragraph (paragraf) -->
+  <p>Ini adalah paragraf.</p>
+  
+  <!-- Link -->
+  <a href="https://google.com">Klik di sini</a>
+  
+  <!-- Image -->
+  <img src="foto.jpg" alt="Deskripsi foto">
+  
+  <!-- Button -->
+  <button>Klik Saya</button>
+  
+  <!-- Input -->
+  <input type="text" placeholder="Masukkan nama">
+  
+  <!-- List -->
+  <ul>
+    <li>Item 1</li>
+    <li>Item 2</li>
+    <li>Item 3</li>
+  </ul>
+  
+  <!-- Div (container) -->
+  <div>
+    <h2>Section 1</h2>
+    <p>Konten section 1</p>
+  </div>
+</body>
+</html>
+```
+
+**Analogi:**
+- `<h1>` = Judul besar (seperti judul buku)
+- `<p>` = Paragraf (seperti isi buku)
+- `<div>` = Kotak pembungkus (seperti bab dalam buku)
+- `<button>` = Tombol yang bisa diklik
+
+## Bagian 4: CSS Basics
+
+CSS adalah styling/tampilan (seperti cat rumah).
+
+```css
+/* Selector by tag */
+h1 {
+  color: blue;
+  font-size: 32px;
+}
+
+/* Selector by class */
+.kotak {
+  background-color: yellow;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Selector by ID */
+#header {
+  background-color: black;
+  color: white;
+  height: 60px;
+}
+
+/* Colors */
+.warna {
+  color: red;              /* Nama warna */
+  color: #FF0000;          /* Hex code */
+  color: rgb(255, 0, 0);   /* RGB */
+}
+
+/* Spacing */
+.spacing {
+  margin: 10px;      /* Jarak LUAR */
+  padding: 20px;     /* Jarak DALAM */
+}
+
+/* Layout */
+.container {
+  display: flex;           /* Flexbox layout */
+  justify-content: center; /* Rata tengah horizontal */
+  align-items: center;     /* Rata tengah vertical */
+}
+```
+
+## Bagian 5: Konsep Penting
+
+### 1. Synchronous vs Asynchronous
+
+**Synchronous** = Antri di bank (tunggu sampai selesai)
+```javascript
+console.log("1");
+console.log("2");
+console.log("3");
+// Output: 1, 2, 3 (berurutan)
+```
+
+**Asynchronous** = Pesan makanan online (kerjakan yang lain sambil nunggu)
+```javascript
+console.log("1");
+
+setTimeout(() => {
+  console.log("2");
+}, 1000);  // Tunggu 1 detik
+
+console.log("3");
+// Output: 1, 3, 2 (tidak berurutan!)
+```
+
+### 2. Promise & Async/Await
+
+**Promise** = Janji yang akan selesai nanti.
+
+```javascript
+// Contoh sederhana
+function ambilData() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve("Data berhasil diambil!");
+    }, 2000);
+  });
+}
+
+// Cara 1: .then()
+ambilData().then(result => {
+  console.log(result);
+});
+
+// Cara 2: async/await (lebih mudah dibaca)
+async function getData() {
+  const result = await ambilData();
+  console.log(result);
+}
+```
+
+**Analogi:**
+- Promise = Tiket antrian di restoran
+- `await` = Duduk dan tunggu sampai dipanggil
+- `resolve` = Makanan siap
+- `reject` = Makanan habis/error
+
+### 3. JSON
+
+JSON = Format data yang biasa dipakai API.
+
+```javascript
+// Object JavaScript
+let mahasiswa = {
+  nama: "Budi",
+  umur: 20,
+  aktif: true
+};
+
+// Convert to JSON (string)
+let jsonString = JSON.stringify(mahasiswa);
+console.log(jsonString);
+// Output: {"nama":"Budi","umur":20,"aktif":true}
+
+// Convert from JSON to object
+let obj = JSON.parse(jsonString);
+console.log(obj.nama);  // Output: Budi
+```
+
+### 4. API & HTTP Request
+
+**API** = Cara aplikasi "ngobrol" dengan server.
+
+```javascript
+// Fetch data dari API
+fetch('https://api.example.com/users')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+  });
+
+// Dengan async/await
+async function getUsers() {
+  const response = await fetch('https://api.example.com/users');
+  const data = await response.json();
+  console.log(data);
+}
+```
+
+**Analogi:**
+- API = Waiter di restoran
+- Request = Order makanan
+- Response = Makanan yang diantar
+
+## Bagian 6: Git Basics (Opsional tapi Penting)
+
+Git = Sistem "save point" untuk code (seperti save game).
+
+```bash
+# Setup awal (sekali saja)
+git config --global user.name "Nama Kamu"
+git config --global user.email "email@example.com"
+
+# Di folder project
+git init                    # Buat repository
+git add .                   # Tambah semua file
+git commit -m "Pesan"       # Save point
+
+# Lihat history
+git log
+
+# Kembali ke commit sebelumnya
+git checkout <commit-id>
+```
+
+## Practice Exercises
+
+### Exercise 1: Calculator
+```javascript
+function calculator(a, b, operasi) {
+  if (operasi === '+') {
+    return a + b;
+  } else if (operasi === '-') {
+    return a - b;
+  } else if (operasi === '*') {
+    return a * b;
+  } else if (operasi === '/') {
+    return a / b;
+  }
+}
+
+console.log(calculator(10, 5, '+'));  // 15
+console.log(calculator(10, 5, '-'));  // 5
+console.log(calculator(10, 5, '*'));  // 50
+console.log(calculator(10, 5, '/'));  // 2
+```
+
+### Exercise 2: Grade Calculator
+```javascript
+function hitungGrade(nilai) {
+  if (nilai >= 90) return 'A';
+  if (nilai >= 80) return 'B';
+  if (nilai >= 70) return 'C';
+  if (nilai >= 60) return 'D';
+  return 'E';
+}
+
+console.log(hitungGrade(95));  // A
+console.log(hitungGrade(75));  // C
+```
+
+### Exercise 3: Filter Array
+```javascript
+let angka = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Ambil angka genap saja
+let genap = angka.filter(num => num % 2 === 0);
+console.log(genap);  // [2, 4, 6, 8, 10]
+
+// Ambil angka > 5
+let besar = angka.filter(num => num > 5);
+console.log(besar);  // [6, 7, 8, 9, 10]
+```
+
+## Glossary (Kamus Istilah)
+
+| Istilah | Penjelasan Simple |
+|---------|-------------------|
+| **Variable** | Kotak untuk simpan data |
+| **Function** | Resep/instruksi yang bisa dipakai ulang |
+| **Array** | List/daftar data |
+| **Object** | Data kompleks dengan properties |
+| **Loop** | Pengulangan |
+| **Condition** | If/else untuk keputusan |
+| **API** | Cara ngobrol dengan server |
+| **JSON** | Format data |
+| **Promise** | Janji yang selesai nanti |
+| **Async** | Tidak perlu tunggu selesai |
+
+## Checklist Kesiapan
+
+Anda siap lanjut ke Module 01 jika sudah:
+
+- [ ] Bisa buka terminal dan run command
+- [ ] Paham variable, function, array, object
+- [ ] Paham if/else dan loop
+- [ ] Paham HTML dasar (h1, p, div, button)
+- [ ] Paham CSS dasar (color, padding, margin)
+- [ ] Paham konsep async/await (minimal tahu apa itu)
+
+**JANGAN khawatir kalau belum 100% paham!** Anda akan lebih paham dengan **practice** di module-module selanjutnya.
+
+## Resources untuk Belajar Lebih
+
+### Gratis & Bahasa Indonesia
+- [Web Programming UNPAS](https://www.youtube.com/c/WebProgrammingUNPAS)
+- [Programmer Zaman Now](https://www.youtube.com/c/ProgrammerZamanNow)
+
+### Gratis & English
+- [freeCodeCamp](https://www.freecodecamp.org/)
+- [JavaScript.info](https://javascript.info/)
+- [MDN Web Docs](https://developer.mozilla.org/)
+
+### Interactive Practice
+- [Codecademy](https://www.codecademy.com/learn/introduction-to-javascript)
+- [SoloLearn](https://www.sololearn.com/)
+
+---
+
+**Pesan Penting:**
+
+> 💪 **"Everyone was a beginner once. The important thing is to START!"**
+
+> 🎯 **Jangan perfectionist!** Belajar sambil practice lebih efektif daripada baca theory terus.
+
+> ⏰ **Be patient with yourself.** Programming butuh waktu, itu normal!
+
+**Ready? Let's go to Module 01!** 🚀

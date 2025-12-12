@@ -1,0 +1,489 @@
+# Ionic Basics
+
+Sekarang environment sudah siap, saatnya menyelami dasar-dasar Ionic Framework. Kita akan pelajari struktur project, cara kerja pages dan components, serta lifecycle hooks.
+
+## Struktur Project Ionic
+
+Mari kita bedah project yang dibuat di Module 02:
+
+```
+myFirstApp/
+├── node_modules/          # Dependencies (jangan edit!)
+├── src/                   # Source code kita
+│   ├── app/
+│   │   ├── home/         # Example page
+│   │   ├── app.component.ts
+│   │   ├── app.module.ts
+│   │   └── app.routes.ts
+│   ├── assets/           # Static files
+│   ├── theme/            # Global styles
+│   ├── index.html
+│   └── main.ts           # Entry point
+├── angular.json           # Angular configuration
+├── capacitor.config.ts    # Capacitor configuration
+├── ionic.config.json      # Ionic configuration
+├── package.json           # Dependencies
+└── tsconfig.json          # TypeScript configuration
+```
+
+### File-File Penting
+
+#### 1. `src/main.ts` - Entry Point
+```typescript
+import { bootstrapApplication } from '@angular/platform-browser';
+import { RouteReuseStrategy, provideRouter } from '@angular/router';
+import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
+
+import { routes } from './app/app.routes';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    provideIonicAngular(),
+    provideRouter(routes),
+  ],
+});
+```
+
+#### 2. `src/app/app.component.ts` - Root Component
+```typescript
+import { Component } from '@angular/core';
+import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: 'app.component.html',
+  standalone: true,
+  imports: [IonApp, IonRouterOutlet],
+})
+export class AppComponent {
+  constructor() {}
+}
+```
+
+#### 3. `src/app/app.routes.ts` - Routing
+```typescript
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: 'home',
+    loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
+  },
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full',
+  },
+];
+```
+
+## Pages di Ionic
+
+Page adalah screen individual dalam aplikasi. Setiap page terdiri dari 4 file:
+
+### Membuat Page Baru
+
+```bash
+ionic generate page pages/about
+# atau shorthand:
+ionic g page pages/about
+```
+
+**File yang dibuat:**
+
+```
+src/app/pages/about/
+├── about.page.ts        # Logic
+├── about.page.html      # Template
+├── about.page.scss      # Styling
+└── about.page.spec.ts   # Testing (optional)
+```
+
+### Anatomy of a Page
+
+#### `about.page.ts` - TypeScript Logic
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { 
+  IonHeader, 
+  IonToolbar, 
+  IonTitle, 
+  IonContent 
+} from '@ionic/angular/standalone';
+
+@Component({
+  selector: 'app-about',
+  templateUrl: './about.page.html',
+  styleUrls: ['./about.page.scss'],
+  standalone: true,
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent]
+})
+export class AboutPage implements OnInit {
+  // Properties
+  appName: string = 'My Ionic App';
+  version: string = '1.0.0';
+
+  constructor() { }
+
+  ngOnInit() {
+    console.log('About page initialized');
+  }
+
+  // Methods
+  showInfo() {
+    console.log(`${this.appName} v${this.version}`);
+  }
+}
+```
+
+#### `about.page.html` - Template
+```html
+<ion-header>
+  <ion-toolbar>
+    <ion-title>About</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <h1>{{ appName }}</h1>
+  <p>Version: {{ version }}</p>
+  
+  <ion-button (click)="showInfo()">
+    Show Info
+  </ion-button>
+</ion-content>
+```
+
+#### `about.page.scss` - Styling
+```scss
+ion-content {
+  --background: #f4f5f8;
+  
+  h1 {
+    color: var(--ion-color-primary);
+    font-size: 24px;
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+  }
+}
+```
+
+## Components di Ionic
+
+Components adalah reusable pieces of UI yang bisa digunakan di multiple pages.
+
+### Membuat Component
+
+```bash
+ionic generate component components/header
+# atau
+ionic g component components/user-card
+```
+
+### Example: User Card Component
+
+#### `user-card.component.ts`
+```typescript
+import { Component, Input } from '@angular/core';
+import { IonCard, IonCardHeader, IonCardTitle, IonCardContent } from '@ionic/angular/standalone';
+
+@Component({
+  selector: 'app-user-card',
+  templateUrl: './user-card.component.html',
+  styleUrls: ['./user-card.component.scss'],
+  standalone: true,
+  imports: [IonCard, IonCardHeader, IonCardTitle, IonCardContent]
+})
+export class UserCardComponent {
+  @Input() name: string = '';
+  @Input() role: string = '';
+  @Input() avatar: string = '';
+}
+```
+
+#### `user-card.component.html`
+```html
+<ion-card>
+  <ion-card-header>
+    <img [src]="avatar" alt="avatar">
+    <ion-card-title>{{ name }}</ion-card-title>
+  </ion-card-header>
+  
+  <ion-card-content>
+    <p>{{ role }}</p>
+  </ion-card-content>
+</ion-card>
+```
+
+### Menggunakan Component
+
+```typescript
+// Di page.ts
+import { UserCardComponent } from '@/components/user-card/user-card.component';
+
+@Component({
+  // ...
+  imports: [IonContent, UserCardComponent]
+})
+export class HomePage {
+  users = [
+    { name: 'John Doe', role: 'Developer', avatar: 'assets/john.jpg' },
+    { name: 'Jane Smith', role: 'Designer', avatar: 'assets/jane.jpg' }
+  ];
+}
+```
+
+```html
+<!-- Di page.html -->
+<ion-content>
+  <app-user-card 
+    *ngFor="let user of users"
+    [name]="user.name"
+    [role]="user.role"
+    [avatar]="user.avatar">
+  </app-user-card>
+</ion-content>
+```
+
+## Lifecycle Hooks
+
+Lifecycle hooks adalah methods yang otomatis dipanggil pada tahap tertentu dalam lifecycle component/page.
+
+### Ionic Lifecycle Hooks
+
+```typescript
+import { Component } from '@angular/core';
+
+@Component({/*...*/})
+export class MyPage {
+  
+  // 1. Component diinisialisasi (Angular)
+  ngOnInit() {
+    console.log('ngOnInit - Component initialized');
+    // Load initial data
+  }
+  
+  // 2. View akan masuk (Ionic)
+  ionViewWillEnter() {
+    console.log('ionViewWillEnter - About to enter');
+    // Refresh data
+  }
+  
+  // 3. View sudah masuk (Ionic)
+  ionViewDidEnter() {
+    console.log('ionViewDidEnter - View fully entered');
+    // Start animations
+  }
+  
+  // 4. View akan keluar (Ionic)
+  ionViewWillLeave() {
+    console.log('ionViewWillLeave - About to leave');
+    // Save state
+  }
+  
+  // 5. View sudah keluar (Ionic)
+  ionViewDidLeave() {
+    console.log('ionViewDidLeave - View left');
+    // Clean up
+  }
+  
+  // 6. Component destroyed (Angular)
+  ngOnDestroy() {
+    console.log('ngOnDestroy - Component destroyed');
+    // Unsubscribe, clear timers
+  }
+}
+```
+
+### Kapan Menggunakan Hook Apa?
+
+| Hook | Use Case |
+|------|----------|
+| `ngOnInit` | Initialize component, load data once |
+| `ionViewWillEnter` | Refresh data, setup listeners |
+| `ionViewDidEnter` | Start animations, focus inputs |
+| `ionViewWillLeave` | Save form data, pause animations |
+| `ionViewDidLeave` | Clean temporary data |
+| `ngOnDestroy` | Unsubscribe observables, clear intervals |
+
+### Example: Data Loading
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+
+@Component({/*...*/})
+export class ProductsPage implements OnInit {
+  products: any[] = [];
+  loading: boolean = false;
+
+  ngOnInit() {
+    // Load data once when created
+    this.loadProducts();
+  }
+
+  ionViewWillEnter() {
+    // Refresh data every time page is entered
+    this.refreshProducts();
+  }
+
+  async loadProducts() {
+    this.loading = true;
+    try {
+      // Simulate API call
+      this.products = await this.fetchProducts();
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async refreshProducts() {
+    // Refresh without showing loader
+    this.products = await this.fetchProducts();
+  }
+  
+  private fetchProducts(): Promise<any[]> {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve([
+          { id: 1, name: 'Product 1', price: 100 },
+          { id: 2, name: 'Product 2', price: 200 }
+        ]);
+      }, 1000);
+    });
+  }
+}
+```
+
+## Data Binding
+
+### 1. Interpolation
+```html
+<h1>{{ title }}</h1>
+<p>{{ getName() }}</p>
+```
+
+### 2. Property Binding
+```html
+<ion-button [disabled]="isLoading">Submit</ion-button>
+<img [src]="imageUrl">
+```
+
+### 3. Event Binding
+```html
+<ion-button (click)="handleClick()">Click Me</ion-button>
+<ion-input (ionChange)="onInputChange($event)"></ion-input>
+```
+
+### 4. Two-way Binding
+```typescript
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  imports: [FormsModule, IonInput]
+})
+export class MyPage {
+  username: string = '';
+}
+```
+
+```html
+<ion-input [(ngModel)]="username" placeholder="Enter username"></ion-input>
+<p>Hello, {{ username }}!</p>
+```
+
+## Practical Exercise
+
+### Challenge: Create a Profile Page
+
+**Requirements:**
+1. Generate a new page called "profile"
+2. Display user information (name, email, bio)
+3. Create a "user-avatar" component
+4. Use lifecycle hooks to log page visits
+5. Add a button to edit profile (just console.log for now)
+
+**Starter Code:**
+
+```typescript
+// profile.page.ts
+export class ProfilePage implements OnInit {
+  user = {
+    name: 'John Doe',
+    email: 'john@example.com',
+    bio: 'Mobile developer',
+    avatar: 'assets/avatar.jpg'
+  };
+
+  ngOnInit() {
+    console.log('Profile page loaded');
+  }
+
+  ionViewWillEnter() {
+    console.log('Visiting profile page');
+  }
+
+  editProfile() {
+    console.log('Edit profile clicked');
+  }
+}
+```
+
+### Solution Steps
+
+1. Generate page:
+```bash
+ionic g page pages/profile
+```
+
+2. Generate component:
+```bash
+ionic g component components/user-avatar
+```
+
+3. Implement the component and page using concepts learned above!
+
+## Common Patterns
+
+### Loading State
+```typescript
+export class MyPage {
+  isLoading: boolean = false;
+
+  async loadData() {
+    this.isLoading = true;
+    try {
+      const data = await this.api.getData();
+      this.items = data;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+}
+```
+
+### Error Handling
+```typescript
+export class MyPage {
+  errorMessage: string = '';
+
+  async saveData() {
+    try {
+      await this.api.save(this.data);
+      this.showSuccess();
+    } catch (error) {
+      this.errorMessage = 'Failed to save data';
+      console.error(error);
+    }
+  }
+}
+```
+
+---
+
+**Selamat!** Anda sudah memahami struktur Ionic dan lifecycle hooks. Next: UI Components! 🎨

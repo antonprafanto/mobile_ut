@@ -1,0 +1,490 @@
+# Deployment
+
+Saatnya deploy aplikasi ke production! Module ini mengajarkan cara build dan publish aplikasi ke Google Play Store dan Apple App Store.
+
+## Build Production
+
+### Optimize untuk Production
+
+```bash
+# Build web assets
+ionic build --prod
+
+# Sync ke native platforms
+npx cap sync
+```
+
+### Configuration
+
+```typescript
+// environment.prod.ts
+export const environment = {
+  production: true,
+  apiUrl: 'https://api.production.com',
+  apiKey: 'your-prod-api-key'
+};
+
+// environment.ts (development)
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:3000',
+  apiKey: 'your-dev-api-key'
+};
+
+// Usage
+import { environment } from '../environments/environment';
+
+const apiUrl = environment.apiUrl;
+```
+
+## Android Deployment
+
+### Prerequisites
+
+1. Android Studio installed
+2. Java JDK (11 or 17)
+3. Google Play Console account ($25 one-time)
+
+### Build Process
+
+#### 1. Update App Info
+
+```typescript
+// capacitor.config.ts
+const config: CapacitorConfig = {
+  appId: 'com.yourcompany.yourapp',
+  appName: 'Your App Name',
+  webDir: 'www',
+  android: {
+    versionCode: 1,
+    versionName: '1.0.0'
+  }
+};
+```
+
+#### 2. Generate Icons & Splash
+
+```bash
+# Install resources generator
+npm install -g cordova-res
+
+# Add source images:
+# resources/icon.png (1024x1024)
+# resources/splash.png (2732x2732)
+
+# Generate
+cordova-res android
+```
+
+#### 3. Build in Android Studio
+
+```bash
+# Open in Android Studio
+npx cap open android
+```
+
+**In Android Studio:**
+1. Go to `Build` → `Generate Signed Bundle / APK`
+2. Choose `Android App Bundle` (recommended) or `APK`
+3. Create new keystore or use existing
+4. Fill keystore details:
+   - Key store path: `android/app/your-app-keystore.jks`
+   - Password: (strong password)
+   - Key alias: `your-app-key`
+   - Key password: (strong password)
+5. Select `release` build variant
+6. Click `Finish`
+
+#### 4. Upload to Play Console
+
+1. Go to [Google Play Console](https://play.google.com/console)
+2. Create new application
+3. Fill app details:
+   - App name
+   - Description
+   - Screenshots (at least 2)
+   - Feature graphic
+   - App icon
+4. Upload AAB file
+5. Set pricing (Free/Paid)
+6. Select countries
+7. Fill content rating questionnaire
+8. Submit for review
+
+### Updating the App
+
+```bash
+# Increment version
+# In capacitor.config.ts:
+versionCode: 2  // Increment by 1
+versionName: '1.0.1'  // Semantic versioning
+
+# Build again
+ionic build --prod
+npx cap sync
+npx cap open android
+
+# Generate new signed AAB
+# Upload to Play Console as new release
+```
+
+### Build Via Command Line
+
+```bash
+# Navigate to android folder
+cd android
+
+# Build release AAB
+./gradlew bundleRelease
+
+# Or build APK
+./gradlew assembleRelease
+
+# Sign (if not configured in build.gradle)
+jarsigner -verbose -sigalg SHA256withRSA \
+  -digestalg SHA-256 -keystore your-app-keystore.jks \
+  app-release-unsigned.apk your-app-key
+
+# Zipalign
+zipalign -v 4 app-release-unsigned.apk app-release.apk
+```
+
+## iOS Deployment
+
+### Prerequisites
+
+1. Mac computer
+2. Xcode (latest version)
+3. Apple Developer Program ($99/year)
+
+### Build Process
+
+#### 1. Update App Info
+
+```typescript
+// capacitor.config.ts
+const config: CapacitorConfig = {
+  appId: 'com.yourcompany.yourapp',
+  appName: 'Your App Name',
+  webDir: 'www',
+  ios: {
+    contentInset: 'always'
+  }
+};
+```
+
+#### 2. Generate Icons & Splash
+
+```bash
+cordova-res ios
+```
+
+#### 3. Open in Xcode
+
+```bash
+npx cap open ios
+```
+
+#### 4. Configure Signing
+
+In Xcode:
+1. Select project in navigator
+2. Select target (App)
+3. Go to `Signing & Capabilities`
+4. Select your Team
+5. Xcode will auto-generate provisioning profile
+
+#### 5. Build Archive
+
+1. Select `Generic iOS Device` as destination
+2. Go to `Product` → `Archive`
+3. Wait for build to complete
+4. Archive organizer will open
+
+#### 6. Upload to App Store Connect
+
+1. Click `Distribute App`
+2. Select `App Store Connect`
+3. Click `Upload`
+4. Wait for processing
+
+#### 7. App Store Connect
+
+1. Go to [App Store Connect](https://appstoreconnect.apple.com)
+2. Create new app
+3. Fill metadata:
+   - App name
+   - Subtitle
+   - Description
+   - Keywords
+   - Screenshots (required for all sizes)
+   - App icon
+4. Select build uploaded earlier
+5. Fill app review information
+6. Submit for review
+
+### Updating iOS App
+
+```bash
+# In Xcode:
+# Select target → General
+# Increment Version (1.0.1)
+# Increment Build (2)
+
+# Archive again and upload
+```
+
+## Optimization Tips
+
+### 1. Image Optimization
+
+```bash
+# Install imagemin
+npm install --save-dev imagemin imagemin-webp
+
+# Convert to WebP
+import imagemin from 'imagemin';
+import imageminWebp from 'imagemin-webp';
+
+await imagemin(['src/assets/*.{jpg,png}'], {
+  destination: 'src/assets/optimized',
+  plugins: [
+    imageminWebp({quality: 80})
+  ]
+});
+```
+
+### 2. Code Splitting
+
+```typescript
+// Use lazy loading
+const routes: Routes = [
+  {
+    path: 'products',
+    loadComponent: () => 
+      import('./products/products.page').then(m => m.ProductsPage)
+  }
+];
+```
+
+### 3. AOT Compilation
+
+```bash
+# Already enabled in production build
+ionic build --prod --aot
+```
+
+### 4. Tree Shaking
+
+Automatically removes unused code in production build.
+
+### 5. Service Worker (PWA)
+
+```bash
+# Add PWA support
+ng add @angular/pwa
+
+# Will generate:
+# - ngsw-config.json
+# - manifest.webmanifest
+# - icons
+```
+
+## Testing Before Release
+
+### 1. Build Checklist
+
+- [ ] All features working
+- [ ] No console errors
+- [ ] Tested on real devices
+- [ ] Performance acceptable
+- [ ] All images optimized
+- [ ] API endpoints use production URLs
+- [ ] Analytics configured
+- [ ] Crash reporting setup
+
+### 2. Device Testing
+
+```bash
+# Run on connected Android device
+ionic cap run android -l --external
+
+# Run on iOS device (requires Mac)
+ionic cap run ios
+```
+
+### 3. Beta Testing
+
+**Android (Google Play):**
+- Create Internal/Closed/Open testing track
+- Upload AAB
+- Invite testers via email
+
+**iOS (TestFlight):**
+- Upload build to App Store Connect
+- Add external testers
+- Send invites
+
+## CI/CD
+
+### GitHub Actions Example
+
+```yaml
+# .github/workflows/build.yml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: ionic build --prod
+    
+    - name: Sync Capacitor
+      run: npx cap sync
+
+    - name: Build Android
+      run: |
+        cd android
+        ./gradlew bundleRelease
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: app-release
+        path: android/app/build/outputs/bundle/release/
+```
+
+## Over-The-Air Updates
+
+Use Capacitor Live Updates or similar for hot fixes without app store approval:
+
+```bash
+npm install @capawesome/capacitor-live-update
+```
+
+```typescript
+import { LiveUpdate } from '@capawesome/capacitor-live-update';
+
+export class UpdateService {
+  async checkForUpdates() {
+    const result = await LiveUpdate.sync();
+    
+    if (result.activeApplicationPathChanged) {
+      // Show message to user
+      const alert = await this.alertCtrl.create({
+        header: 'Update Available',
+        message: 'Restart to apply updates',
+        buttons: [{
+          text: 'Restart',
+          handler: () => LiveUpdate.reload()
+        }]
+      });
+      await alert.present();
+    }
+  }
+}
+```
+
+## Analytics & Monitoring
+
+### Firebase Analytics
+
+```bash
+npm install @capacitor-firebase/analytics
+npx cap sync
+```
+
+```typescript
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+
+export class AnalyticsService {
+  async logEvent(name: string, params?: any) {
+    await FirebaseAnalytics.logEvent({
+      name,
+      params
+    });
+  }
+
+  async setUser(userId: string) {
+    await FirebaseAnalytics.setUserId({ userId });
+  }
+
+  async logScreenView(screenName: string) {
+    await FirebaseAnalytics.logEvent({
+      name: 'screen_view',
+      params: {
+        screen_name: screenName
+      }
+    });
+  }
+}
+```
+
+### Crash Reporting
+
+```bash
+npm install @sentry/capacitor
+```
+
+```typescript
+import * as Sentry from '@sentry/capacitor';
+
+Sentry.init({
+  dsn: 'your-sentry-dsn',
+  environment: environment.production ? 'production' : 'development'
+});
+```
+
+## Post-Launch
+
+### 1. Monitor Metrics
+- Crash rate
+- Daily active users
+- Session length
+- User retention
+
+### 2. Gather Feedback
+- In-app feedback form
+- App store reviews
+- Social media
+- Support emails
+
+### 3. Iterate
+- Fix bugs quickly
+- Add requested features
+- Improve performance
+- Update regularly
+
+## App Store Guidelines
+
+### Google Play
+- No misleading content
+- Proper permissions disclosure
+- Privacy policy required
+- Content rating
+
+### Apple App Store
+- Stricter review process
+- Follow Human Interface Guidelines
+- No private APIs
+- Proper use of permissions
+
+---
+
+**Next:** Module 11 - Final Project! 🎓

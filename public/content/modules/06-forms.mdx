@@ -1,0 +1,530 @@
+# Forms & Validation
+
+Form handling adalah skill essential dalam mobile development. Module ini mengajarkan cara membuat dan validate forms dengan Reactive Forms.
+
+## Reactive Forms vs Template-Driven
+
+**Reactive Forms** (Recommended):
+- More control
+- Easier testing
+- Better for complex forms
+- Type-safe
+
+**Template-Driven**:
+- Simpler syntax
+- Good for simple forms
+- Less boilerplate
+
+Kita fokus ke Reactive Forms!
+
+## Setup
+
+```typescript
+// Import di page.ts
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { IonInput, IonButton } from '@ionic/angular/standalone';
+
+@Component({
+  imports: [ReactiveFormsModule, IonInput, IonButton, ...]
+})
+export class RegisterPage {
+  registerForm: FormGroup;
+
+  constructor(private fb: FormBuilder) {
+    this.registerForm = this.fb.group({
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required]
+    });
+  }
+}
+```
+
+## Basic Form Implementation
+
+### register.page.html
+
+```html
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Register</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+    
+    <!-- Username -->
+    <ion-item>
+      <ion-label position="floating">Username</ion-label>
+      <ion-input 
+        type="text" 
+        formControlName="username"
+        placeholder="Enter username">
+      </ion-input>
+    </ion-item>
+    <div class="error-message" 
+         *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched">
+      <span *ngIf="registerForm.get('username')?.errors?.['required']">
+        Username is required
+      </span>
+      <span *ngIf="registerForm.get('username')?.errors?.['minlength']">
+        Username must be at least 3 characters
+      </span>
+    </div>
+
+    <!-- Email -->
+    <ion-item>
+      <ion-label position="floating">Email</ion-label>
+      <ion-input 
+        type="email" 
+        formControlName="email"
+        placeholder="your@email.com">
+      </ion-input>
+    </ion-item>
+    <div class="error-message" 
+         *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+      <span *ngIf="registerForm.get('email')?.errors?.['required']">
+        Email is required
+      </span>
+      <span *ngIf="registerForm.get('email')?.errors?.['email']">
+        Invalid email format
+      </span>
+    </div>
+
+    <!-- Password -->
+    <ion-item>
+      <ion-label position="floating">Password</ion-label>
+      <ion-input 
+        type="password" 
+        formControlName="password">
+      </ion-input>
+    </ion-item>
+
+    <!-- Confirm Password -->
+    <ion-item>
+      <ion-label position="floating">Confirm Password</ion-label>
+      <ion-input 
+        type="password" 
+        formControlName="confirmPassword">
+      </ion-input>
+    </ion-item>
+
+    <!-- Submit Button -->
+    <ion-button 
+      expand="block" 
+      type="submit" 
+      [disabled]="registerForm.invalid"
+      class="ion-margin-top">
+      Register
+    </ion-button>
+  </form>
+</ion-content>
+```
+
+### register.page.scss
+
+```scss
+.error-message {
+  color: var(--ion-color-danger);
+  font-size: 12px;
+  padding: 5px 16px;
+  
+  span {
+    display: block;
+  }
+}
+
+ion-item {
+  &.ion-invalid.ion-touched {
+    --border-color: var(--ion-color-danger);
+    --highlight-color: var(--ion-color-danger);
+  }
+}
+```
+
+### register.page.ts
+
+```typescript
+export class RegisterPage {
+  registerForm: FormGroup;
+
+  constructor(
+    private fb: FormBuilder,
+    private toastCtrl: ToastController
+  ) {
+    this.registerForm = this.fb.group({
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required]
+    }, {
+      validators: this.passwordMatchValidator
+    });
+  }
+
+  // Custom validator
+  passwordMatchValidator(form: FormGroup) {
+    const password = form.get('password');
+    const confirmPassword = form.get('confirmPassword');
+    
+    if (password?.value !== confirmPassword?.value) {
+      confirmPassword?.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+    
+    return null;
+  }
+
+  async onSubmit() {
+    if (this.registerForm.valid) {
+      const formData = this.registerForm.value;
+      console.log('Form Data:', formData);
+      
+      // API call here
+      await this.register(formData);
+    } else {
+      // Mark all as touched to show errors
+      this.registerForm.markAllAsTouched();
+    }
+  }
+
+  async register(data: any) {
+    const toast = await this.toastCtrl.create({
+      message: 'Registration successful!',
+      duration: 2000,
+      color: 'success'
+    });
+    await toast.present();
+  }
+}
+```
+
+## Built-in Validators
+
+```typescript
+this.form = this.fb.group({
+  // Required
+  name: ['', Validators.required],
+  
+  // Email
+  email: ['', [Validators.required, Validators.email]],
+  
+  // Min/Max Length
+  username: ['', [Validators.minLength(3), Validators.maxLength(20)]],
+  
+  // Pattern (Regex)
+  phone: ['', Validators.pattern(/^[0-9]{10,12}$/)],
+  
+  // Min/Max Value
+  age: ['', [Validators.min(18), Validators.max(100)]],
+  
+  // Multiple validators
+  password: ['', [
+    Validators.required,
+    Validators.minLength(8),
+    Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  ]]
+});
+```
+
+## Custom Validators
+
+### Async Validator (Check username availability)
+
+```typescript
+import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
+import { Observable, of } from 'rxjs';
+import { map, delay } from 'rxjs/operators';
+
+export class CustomValidators {
+  
+  static usernameAvailable(apiService: any): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      if (!control.value) {
+        return of(null);
+      }
+
+      return apiService.checkUsername(control.value).pipe(
+        delay(500), // Debounce
+        map((available: boolean) => {
+          return available ? null : { usernameTaken: true };
+        })
+      );
+    };
+  }
+
+  static phoneNumber(control: AbstractControl): ValidationErrors | null {
+    const phoneRegex = /^(\+62|62|0)[0-9]{9,11}$/;
+    
+    if (!control.value) {
+      return null;
+    }
+    
+    const valid = phoneRegex.test(control.value);
+    return valid ? null : { invalidPhone: true };
+  }
+
+  static noSpaces(control: AbstractControl): ValidationErrors | null {
+    if (control.value && control.value.indexOf(' ') >= 0) {
+      return { hasSpaces: true };
+    }
+    return null;
+  }
+}
+
+// Usage
+this.form = this.fb.group({
+  username: ['', 
+    [Validators.required, CustomValidators.noSpaces],
+    [CustomValidators.usernameAvailable(this.api)]
+  ],
+  phone: ['', CustomValidators.phoneNumber]
+});
+```
+
+## Dynamic Forms
+
+### Adding/Removing Form Controls
+
+```typescript
+import { FormArray } from '@angular/forms';
+
+export class DynamicFormPage {
+  profileForm: FormGroup;
+
+  constructor(private fb: FormBuilder) {
+    this.profileForm = this.fb.group({
+      name: ['', Validators.required],
+      emails: this.fb.array([
+        this.createEmailControl()
+      ])
+    });
+  }
+
+  get emails(): FormArray {
+    return this.profileForm.get('emails') as FormArray;
+  }
+
+  createEmailControl(): FormGroup {
+    return this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      primary: [false]
+    });
+  }
+
+  addEmail() {
+    this.emails.push(this.createEmailControl());
+  }
+
+  removeEmail(index: number) {
+    if (this.emails.length > 1) {
+      this.emails.removeAt(index);
+    }
+  }
+}
+```
+
+```html
+<form [formGroup]="profileForm">
+  <ion-item>
+    <ion-label position="floating">Name</ion-label>
+    <ion-input formControlName="name"></ion-input>
+  </ion-item>
+
+  <div formArrayName="emails">
+    <ion-item-group *ngFor="let email of emails.controls; let i = index">
+      <div [formGroupName]="i">
+        <ion-item>
+          <ion-label position="floating">Email {{ i + 1 }}</ion-label>
+          <ion-input formControlName="email"></ion-input>
+          <ion-checkbox formControlName="primary" slot="start"></ion-checkbox>
+          <ion-button 
+            fill="clear" 
+            slot="end" 
+            (click)="removeEmail(i)"
+            *ngIf="emails.length > 1">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </div>
+    </ion-item-group>
+  </div>
+
+  <ion-button expand="block" (click)="addEmail()">
+    <ion-icon name="add"></ion-icon>
+    Add Email
+  </ion-button>
+</form>
+```
+
+## Form State Management
+
+```typescript
+export class FormPage {
+  form: FormGroup;
+
+  constructor() {
+    this.form = this.fb.group({/*...*/});
+
+    // Listen to value changes
+    this.form.valueChanges.subscribe(values => {
+      console.log('Form values:', values);
+    });
+
+    // Listen to specific field
+    this.form.get('email')?.valueChanges.subscribe(value => {
+      console.log('Email changed:', value);
+    });
+
+    // Status changes
+    this.form.statusChanges.subscribe(status => {
+      console.log('Form status:', status); // VALID, INVALID, PENDING
+    });
+  }
+
+  // Check form state
+  get isFormValid() {
+    return this.form.valid;
+  }
+
+  get isFormDirty() {
+    return this.form.dirty;
+  }
+
+  get isFormTouched() {
+    return this.form.touched;
+  }
+
+  // Reset form
+  resetForm() {
+    this.form.reset();
+  }
+
+  // Set values programmatically
+  fillForm() {
+    this.form.patchValue({
+      email: 'john@example.com',
+      username: 'johndoe'
+    });
+  }
+
+  // Enable/Disable controls
+  toggleField() {
+    const emailControl = this.form.get('email');
+    if (emailControl?.disabled) {
+      emailControl.enable();
+    } else {
+      emailControl?.disable();
+    }
+  }
+}
+```
+
+## Error Display Component
+
+```typescript
+// form-error.component.ts
+@Component({
+  selector: 'app-form-error',
+  template: `
+    <div class="error-message" *ngIf="shouldShowError()">
+      <ng-container [ngSwitch]="errorType">
+        <span *ngSwitchCase="'required'">This field is required</span>
+        <span *ngSwitchCase="'email'">Invalid email format</span>
+        <span *ngSwitchCase="'minlength'">
+          Minimum {{ control.errors?.['minlength']?.requiredLength }} characters required
+        </span>
+        <span *ngSwitchCase="'maxlength'">
+          Maximum {{ control.errors?.['maxlength']?.requiredLength }} characters allowed
+        </span>
+        <span *ngSwitchCase="'pattern'">Invalid format</span>
+        <span *ngSwitchDefault>Invalid input</span>
+      </ng-container>
+    </div>
+  `,
+  standalone: true,
+  imports: [CommonModule]
+})
+export class FormErrorComponent {
+  @Input() control: AbstractControl | null = null;
+
+  shouldShowError(): boolean {
+    return !!(this.control?.invalid && this.control?.touched);
+  }
+
+  get errorType(): string | null {
+    if (!this.control?.errors) return null;
+    return Object.keys(this.control.errors)[0];
+  }
+}
+
+// Usage
+<ion-item>
+  <ion-input formControlName="email"></ion-input>
+</ion-item>
+<app-form-error [control]="form.get('email')"></app-form-error>
+```
+
+## File Upload
+
+```typescript
+export class ProfilePage {
+  form: FormGroup;
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
+
+  async selectImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.selectedFile = file;
+        
+        // Preview
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.imagePreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    
+    input.click();
+  }
+
+  async uploadImage() {
+    if (!this.selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    
+    // Upload to server
+    // await this.http.post('/upload', formData).toPromise();
+  }
+}
+```
+
+## Best Practices
+
+1. **Validate on Submit** - Don't annoy users with errors before they finish
+2. **Clear Error Messages** - Tell users exactly what's wrong
+3. **Disable Submit** when form is invalid
+4. **Use Helper Methods**:
+   ```typescript
+   isFieldInvalid(field: string) {
+     return this.form.get(field)?.invalid && 
+            this.form.get(field)?.touched;
+   }
+   ```
+5. **Debounce API Validations** to avoid too many requests
+6. **Save Draft** for long forms
+7. **Show Loading State** during submission
+
+---
+
+**Next:** Module 07 - HTTP & Data Management! 🌐

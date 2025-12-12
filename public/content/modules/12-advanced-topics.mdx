@@ -1,0 +1,691 @@
+# Advanced Topics
+
+Selamat datang di module bonus! Di sini kita akan explore topik-topik advanced yang penting untuk menjadi Ionic developer profesional.
+
+## Debugging & Troubleshooting
+
+### Chrome DevTools untuk Mobile
+
+Debugging adalah skill essential. Gunakan Chrome DevTools untuk inspect aplikasi:
+
+```bash
+# Jalankan dengan inspect mode
+ionic serve
+# Buka Chrome DevTools (F12)
+```
+
+**Fitur Penting:**
+
+1. **Console**: Lihat logs, errors, warnings
+2. **Elements**: Inspect DOM structure
+3. **Network**: Monitor HTTP requests
+4. **Application**: Check localStorage, cookies
+5. **Sources**: Set breakpoints
+
+### Remote Debugging
+
+#### Android via Chrome
+
+```bash
+# Connect device via USB
+# Enable USB Debugging di Android
+
+# Run app
+ionic cap run android -l --external
+
+# Buka Chrome: chrome://inspect
+# Click "inspect" pada device Anda
+```
+
+#### iOS via Safari
+
+```bash
+# Enable Web Inspector di iOS Settings
+# Safari > Develop > [Your Device]
+```
+
+### Common Errors & Solutions
+
+#### Error: Cannot find module
+
+```bash
+# Solution: Install missing dependency
+npm install <package-name>
+
+# Clear cache if needed
+rm -rf node_modules
+npm install
+```
+
+#### Error: Port already in use
+
+```bash
+# Solution: Use different port
+ionic serve --port=8200
+
+# Or kill process on port 8100
+# Windows:
+netstat -ano | findstr :8100
+taskkill /PID <PID> /F
+
+# Mac/Linux:
+lsof -ti:8100 | xargs kill
+```
+
+#### Error: White Screen
+
+**Causes:**
+- JavaScript error
+- Missing import
+- Routing issue
+
+**Debug Steps:**
+```typescript
+// 1. Check console for errors
+console.log('App started');
+
+// 2. Verify routing
+export const routes: Routes = [
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'home', loadComponent: () => import('./home/home.page') }
+];
+
+// 3. Check imports
+import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+```
+
+### Logging Best Practices
+
+```typescript
+// Create logger service
+export class LoggerService {
+  private isDev = !environment.production;
+
+  log(message: string, data?: any) {
+    if (this.isDev) {
+      console.log(`[LOG] ${message}`, data);
+    }
+  }
+
+  error(message: string, error?: any) {
+    console.error(`[ERROR] ${message}`, error);
+    // Send to error tracking service
+    this.sendToSentry(message, error);
+  }
+
+  warn(message: string, data?: any) {
+    if (this.isDev) {
+      console.warn(`[WARN] ${message}`, data);
+    }
+  }
+}
+
+// Usage
+this.logger.log('User logged in', { userId: user.id });
+this.logger.error('Failed to load data', error);
+```
+
+## Testing
+
+### Unit Testing dengan Jest
+
+#### Setup
+
+```bash
+npm install --save-dev jest @types/jest ts-jest
+npm install --save-dev @testing-library/angular
+
+# Generate jest config
+npx ts-jest config:init
+```
+
+#### Basic Test
+
+```typescript
+// user.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { UserService } from './user.service';
+
+describe('UserService', () => {
+  let service: UserService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(UserService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('should set user correctly', () => {
+    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
+    service.setUser(mockUser);
+    expect(service.currentUser).toEqual(mockUser);
+  });
+
+  it('should clear user on logout', () => {
+    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
+    service.setUser(mockUser);
+    service.logout();
+    expect(service.currentUser).toBeNull();
+  });
+});
+```
+
+#### Testing Components
+
+```typescript
+// login.page.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { LoginPage } from './login.page';
+import { AuthService } from '@/services/auth.service';
+
+describe('LoginPage', () => {
+  let component: LoginPage;
+  let fixture: ComponentFixture<LoginPage>;
+  let authService: jasmine.SpyObj<AuthService>;
+
+  beforeEach(async () => {
+    const authSpy = jasmine.createSpyObj('AuthService', ['login']);
+
+    await TestBed.configureTestingModule({
+      imports: [LoginPage],
+      providers: [
+        { provide: AuthService, useValue: authSpy }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(LoginPage);
+    component = fixture.componentInstance;
+    authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('should call authService.login on submit', () => {
+    component.loginForm.setValue({
+      email: 'test@example.com',
+      password: 'password123'
+    });
+
+    component.onSubmit();
+
+    expect(authService.login).toHaveBeenCalledWith('test@example.com', 'password123');
+  });
+
+  it('should not submit if form is invalid', () => {
+    component.loginForm.setValue({
+      email: 'invalid-email',
+      password: '123'
+    });
+
+    component.onSubmit();
+
+    expect(authService.login).not.toHaveBeenCalled();
+  });
+});
+```
+
+### E2E Testing dengan Playwright
+
+#### Setup
+
+```bash
+npm install --save-dev @playwright/test
+npx playwright install
+```
+
+#### Test Example
+
+```typescript
+// tests/e2e/login.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Login Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('http://localhost:8100');
+  });
+
+  test('should display login form', async ({ page }) => {
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toBeVisible();
+    await expect(page.locator('ion-button:has-text("Login")')).toBeVisible();
+  });
+
+  test('should login successfully', async ({ page }) => {
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.fill('input[type="password"]', 'password123');
+    await page.click('ion-button:has-text("Login")');
+
+    // Wait for navigation
+    await page.waitForURL('**/home');
+
+    // Check if redirected to home
+    await expect(page).toHaveURL(/home/);
+  });
+
+  test('should show error on invalid credentials', async ({ page }) => {
+    await page.fill('input[type="email"]', 'wrong@example.com');
+    await page.fill('input[type="password"]', 'wrongpass');
+    await page.click('ion-button:has-text("Login")');
+
+    // Check for error message
+    await expect(page.locator('.error-message')).toBeVisible();
+  });
+});
+```
+
+### Testing Best Practices
+
+1. **Test Pyramid**: More unit tests, fewer E2E tests
+2. **AAA Pattern**: Arrange, Act, Assert
+3. **Test One Thing**: Each test should verify one behavior
+4. **Use Descriptive Names**: `should redirect to home after successful login`
+5. **Mock External Dependencies**: Don't call real APIs in tests
+
+## Animations & Gestures
+
+### Ionic Animations API
+
+```typescript
+import { AnimationController } from '@ionic/angular';
+
+export class MyPage {
+  constructor(private animationCtrl: AnimationController) {}
+
+  fadeIn() {
+    const animation = this.animationCtrl.create()
+      .addElement(document.querySelector('.my-element')!)
+      .duration(1000)
+      .fromTo('opacity', '0', '1');
+
+    animation.play();
+  }
+
+  slideIn() {
+    const animation = this.animationCtrl.create()
+      .addElement(document.querySelector('.card')!)
+      .duration(500)
+      .fromTo('transform', 'translateX(-100%)', 'translateX(0)')
+      .easing('ease-out');
+
+    animation.play();
+  }
+
+  bounce() {
+    const animation = this.animationCtrl.create()
+      .addElement(document.querySelector('.button')!)
+      .duration(600)
+      .iterations(Infinity)
+      .keyframes([
+        { offset: 0, transform: 'scale(1)' },
+        { offset: 0.5, transform: 'scale(1.2)' },
+        { offset: 1, transform: 'scale(1)' }
+      ]);
+
+    animation.play();
+  }
+}
+```
+
+### Gesture Controller
+
+```typescript
+import { GestureController } from '@ionic/angular';
+
+export class SwipeCard {
+  constructor(private gestureCtrl: GestureController) {}
+
+  ngAfterViewInit() {
+    const card = document.querySelector('.swipe-card')!;
+    
+    const gesture = this.gestureCtrl.create({
+      el: card,
+      gestureName: 'swipe',
+      onStart: () => {
+        console.log('Swipe started');
+      },
+      onMove: (detail) => {
+        // Update position based on delta
+        card.style.transform = `translateX(${detail.deltaX}px)`;
+      },
+      onEnd: (detail) => {
+        // Swipe threshold
+        if (Math.abs(detail.deltaX) > 100) {
+          // Remove card
+          card.remove();
+        } else {
+          // Reset position
+          card.style.transform = 'translateX(0)';
+        }
+      }
+    });
+
+    gesture.enable();
+  }
+}
+```
+
+### Page Transitions
+
+```typescript
+// Custom page transition
+export const customTransition = (_: HTMLElement, opts: any) => {
+  const rootTransition = animationCtrl.create()
+    .duration(opts.duration || 300)
+    .easing('cubic-bezier(0.36, 0.66, 0.04, 1)');
+
+  const enteringPage = animationCtrl.create()
+    .addElement(opts.enteringEl)
+    .fromTo('opacity', '0', '1')
+    .fromTo('transform', 'translateX(100%)', 'translateX(0)');
+
+  const leavingPage = animationCtrl.create()
+    .addElement(opts.leavingEl)
+    .fromTo('opacity', '1', '0')
+    .fromTo('transform', 'translateX(0)', 'translateX(-100%)');
+
+  rootTransition.addAnimation([enteringPage, leavingPage]);
+  return rootTransition;
+};
+
+// Use in navigation
+this.navCtrl.navigateForward('/page', {
+  animation: customTransition
+});
+```
+
+### CSS Animations
+
+```scss
+// Pulse animation
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// Fade in
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+// Slide up
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+```
+
+## Security Best Practices
+
+### 1. API Security
+
+#### Secure Token Storage
+
+```typescript
+import { Preferences } from '@capacitor/preferences';
+
+export class SecureStorageService {
+  private readonly TOKEN_KEY = 'auth_token';
+
+  async saveToken(token: string) {
+    // In production, use Capacitor SecureStorage plugin
+    await Preferences.set({
+      key: this.TOKEN_KEY,
+      value: token
+    });
+  }
+
+  async getToken(): Promise<string | null> {
+    const { value } = await Preferences.get({ key: this.TOKEN_KEY });
+    return value;
+  }
+
+  async removeToken() {
+    await Preferences.remove({ key: this.TOKEN_KEY });
+  }
+}
+```
+
+#### HTTP Interceptor untuk Auth
+
+```typescript
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
+  const token = authService.getToken();
+
+  if (token) {
+    req = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+
+  return next(req);
+};
+```
+
+### 2. Input Sanitization
+
+```typescript
+import { DomSanitizer } from '@angular/platform-browser';
+
+export class SafeComponent {
+  constructor(private sanitizer: DomSanitizer) {}
+
+  sanitizeHtml(html: string) {
+    // Remove dangerous HTML
+    return this.sanitizer.sanitize(SecurityContext.HTML, html);
+  }
+
+  sanitizeUrl(url: string) {
+    // Validate URL
+    return this.sanitizer.sanitize(SecurityContext.URL, url);
+  }
+
+  validateInput(input: string): boolean {
+    // Check for SQL injection patterns
+    const sqlPattern = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i;
+    
+    // Check for XSS patterns
+    const xssPattern = /<script|javascript:|onerror=/i;
+
+    return !sqlPattern.test(input) && !xssPattern.test(input);
+  }
+}
+```
+
+### 3. Environment Variables
+
+```typescript
+// environment.prod.ts
+export const environment = {
+  production: true,
+  apiUrl: 'https://api.production.com',
+  apiKey: process.env['API_KEY'], // From env variable
+};
+
+// JANGAN hardcode secrets!
+// ❌ Salah:
+const API_KEY = 'sk-1234567890abcdef';
+
+// ✅ Benar:
+const API_KEY = environment.apiKey;
+```
+
+### 4. SSL/TLS
+
+```typescript
+// capacitor.config.ts
+export default {
+  server: {
+    cleartext: false, // Force HTTPS
+    androidScheme: 'https'
+  }
+};
+```
+
+### 5. Content Security Policy
+
+```html
+<!-- index.html -->
+<meta http-equiv="Content-Security-Policy" 
+      content="default-src 'self'; 
+               script-src 'self' 'unsafe-inline'; 
+               style-src 'self' 'unsafe-inline';
+               img-src 'self' data: https:;
+               connect-src 'self' https://api.yourdomain.com;">
+```
+
+### 6. Rate Limiting
+
+```typescript
+import { debounceTime, throttleTime } from 'rxjs/operators';
+
+export class ApiService {
+  // Debounce search (wait for user to stop typing)
+  search(query: string) {
+    return of(query).pipe(
+      debounceTime(300),
+      switchMap(q => this.http.get(`/search?q=${q}`))
+    );
+  }
+
+  // Throttle button clicks
+  submitForm() {
+    return fromEvent(button, 'click').pipe(
+      throttleTime(2000), // Max once per 2 seconds
+      switchMap(() => this.http.post('/submit', data))
+    );
+  }
+}
+```
+
+## Performance Optimization
+
+### 1. Lazy Loading
+
+```typescript
+// routes.ts - Already implemented!
+{
+  path: 'products',
+  loadComponent: () => import('./products/products.page').then(m => m.ProductsPage)
+}
+```
+
+### 2. Virtual Scrolling
+
+```typescript
+// For long lists
+import { IonVirtualScroll } from '@ionic/angular/standalone';
+
+@Component({
+  template: `
+    <ion-content>
+      <ion-virtual-scroll [items]="items">
+        <ion-item *virtualItem="let item">
+          {{ item.name }}
+        </ion-item>
+      </ion-virtual-scroll>
+    </ion-content>
+  `,
+  imports: [IonVirtualScroll, IonItem]
+})
+export class LargeListPage {
+  items = Array.from({ length: 10000 }, (_, i) => ({ 
+    id: i, 
+    name: `Item ${i}` 
+  }));
+}
+```
+
+### 3. Image Optimization
+
+```html
+<!-- Use appropriate sizes -->
+<img src="image-small.jpg" 
+     srcset="image-small.jpg 320w, image-medium.jpg 768w, image-large.jpg 1200w"
+     sizes="(max-width: 320px) 280px, (max-width: 768px) 720px, 1200px">
+
+<!-- Lazy load images -->
+<img src="placeholder.jpg" data-src="actual-image.jpg" loading="lazy">
+```
+
+### 4. Memoization
+
+```typescript
+import { memoize } from 'lodash';
+
+export class DataService {
+  // Cache expensive calculations
+  expensiveCalculation = memoize((input: number) => {
+    // Complex calculation
+    return input * Math.random();
+  });
+}
+```
+
+### 5. Change Detection Strategy
+
+```typescript
+import { ChangeDetectionStrategy } from '@angular/core';
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush // Only check when @Input changes
+})
+export class OptimizedComponent {
+  @Input() data: any;
+}
+```
+
+## Tools & Resources
+
+### Development Tools
+
+- **Ionic DevApp**: Test on device without deployment
+- **Capacitor Doctor**: `npx cap doctor` - Check config
+- **Bundle Analyzer**: Analyze app size
+  ```bash
+  npm install --save-dev webpack-bundle-analyzer
+  ```
+
+### Monitoring
+
+- **Sentry**: Error tracking
+- **Firebase Analytics**: User behavior
+- **Lighthouse**: Performance audit
+
+### Learning Resources
+
+- [Ionic Docs](https://ionicframework.com/docs)
+- [Angular Testing Guide](https://angular.io/guide/testing)
+- [Web.dev](https://web.dev) - Performance tips
+- [OWASP Mobile Security](https://owasp.org/www-project-mobile-security/)
+
+---
+
+**Selamat!** Anda sudah menguasai topik-topik advanced Ionic development! 🚀
+
+**Next Steps:**
+1. Practice dengan build aplikasi nyata
+2. Contribute to open source Ionic projects
+3. Join komunitas Ionic
+4. Keep learning dan stay updated!

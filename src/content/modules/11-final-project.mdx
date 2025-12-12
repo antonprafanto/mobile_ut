@@ -1,0 +1,545 @@
+# Final Project: Todo List App
+
+Selamat! Anda telah sampai di module terakhir. Saatnya menerapkan semua yang telah dipelajari dengan membuat aplikasi Todo List lengkap.
+
+## Project Requirements
+
+### Fitur Utama
+
+1. **Authentication**
+   - Login & Register
+   - Persistent login state
+   - Logout
+
+2. **Todo Management**
+   - Create todo
+   - Read/List todos
+   - Update todo (edit & toggle complete)
+   - Delete todo
+   - Filter (All/Active/Completed)
+
+3. **Categories**
+   - Assign category to todo
+   - Filter by category
+   - Category colors
+
+4. **Additional Features**
+   - Due dates
+   - Priority levels (Low/Medium/High)
+   - Search functionality
+   - Dark mode toggle
+   - Pull-to-refresh
+   - Offline support
+
+### Technical Requirements
+
+- ✅ Reactive Forms untuk input
+- ✅ HTTP calls untuk backend API
+- ✅ State management dengan services
+- ✅ Navigation (tabs + detail pages)
+- ✅ Local storage untuk offline
+- ✅ Native features (camera untuk profile photo)
+- ✅ Proper error handling
+- ✅ Loading states
+- ✅ Responsive design
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── auth/
+│   │   ├── login/
+│   │   └── register/
+│   ├── tabs/
+│   │   ├── home/           # Todo list
+│   │   ├── categories/     # Category management
+│   │   └── profile/        # User profile
+│   ├── todo/
+│   │   ├── todo-detail/
+│   │   └── todo-form/
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── todo.service.ts
+│   │   ├── category.service.ts
+│   │   └── storage.service.ts
+│   ├── models/
+│   │   ├── user.model.ts
+│   │   ├── todo.model.ts
+│   │   └── category.model.ts
+│   └── guards/
+│       └── auth.guard.ts
+└── theme/
+    └── variables.scss
+```
+
+## Implementation Guide
+
+### 1. Models
+
+```typescript
+// models/user.model.ts
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+// models/category.model.ts
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
+
+// models/todo.model.ts
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  categoryId?: string;
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### 2. Services
+
+#### Auth Service
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private userSubject = new BehaviorSubject<User | null>(null);
+  user$ = this.userSubject.asObservable();
+
+  constructor(
+    private http: HttpClient,
+    private storage: StorageService
+  ) {
+    this.loadUser();
+  }
+
+  async login(email: string, password: string): Promise<User> {
+    const response = await this.http.post<{user:User, token: string}>(
+      '/api/login',
+      { email, password }
+    ).toPromise();
+
+    if (response) {
+      await this.setUser(response.user);
+      await this.storage.set('token', response.token);
+      return response.user;
+    }
+    throw new Error('Login failed');
+  }
+
+  async register(name: string, email: string, password: string): Promise<User> {
+    const response = await this.http.post<{user: User, token: string}>(
+      '/api/register',
+      { name, email, password }
+    ).toPromise();
+
+    if (response) {
+      await this.setUser(response.user);
+      await this.storage.set('token', response.token);
+      return response.user;
+    }
+    throw new Error('Registration failed');
+  }
+
+  async logout() {
+    this.userSubject.next(null);
+    await this.storage.remove('user');
+    await this.storage.remove('token');
+  }
+
+  private async setUser(user: User) {
+    this.userSubject.next(user);
+    await this.storage.set('user', user);
+  }
+
+  private async loadUser() {
+    const user = await this.storage.get<User>('user');
+    if (user) {
+      this.userSubject.next(user);
+    }
+  }
+
+  get currentUser(): User | null {
+    return this.userSubject.value;
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.currentUser;
+  }
+}
+```
+
+#### Todo Service
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class TodoService {
+  private todosSubject = new BehaviorSubject<Todo[]>([]);
+  todos$ = this.todosSubject.asObservable();
+
+  constructor(
+    private http: HttpClient,
+    private storage: StorageService
+  ) {
+    this.loadTodos();
+  }
+
+  async loadTodos() {
+    try {
+      const todos = await this.http.get<Todo[]>('/api/todos').toPromise();
+      if (todos) {
+        this.todosSubject.next(todos);
+        await this.storage.set('todos', todos);
+      }
+    } catch (error) {
+      // Load from local storage if offline
+      const cached = await this.storage.get<Todo[]>('todos');
+      if (cached) {
+        this.todosSubject.next(cached);
+      }
+    }
+  }
+
+  async createTodo(todo: Partial<Todo>): Promise<Todo> {
+    const newTodo = await this.http.post<Todo>('/api/todos', todo).toPromise();
+    if (newTodo) {
+      const current = this.todosSubject.value;
+      this.todosSubject.next([...current, newTodo]);
+      await this.saveTodos();
+      return newTodo;
+    }
+    throw new Error('Failed to create todo');
+  }
+
+  async updateTodo(id: string, updates: Partial<Todo>): Promise<Todo> {
+    const updated = await this.http.patch<Todo>(`/api/todos/${id}`, updates).toPromise();
+    if (updated) {
+      const current = this.todosSubject.value;
+      const index = current.findIndex(t => t.id === id);
+      if (index !== -1) {
+        current[index] = updated;
+        this.todosSubject.next([...current]);
+        await this.saveTodos();
+      }
+      return updated;
+    }
+    throw new Error('Failed to update todo');
+  }
+
+  async deleteTodo(id: string): Promise<void> {
+    await this.http.delete(`/api/todos/${id}`).toPromise();
+    const current = this.todosSubject.value;
+    this.todosSubject.next(current.filter(t => t.id !== id));
+    await this.saveTodos();
+  }
+
+  async toggleComplete(id: string): Promise<void> {
+    const todo = this.todosSubject.value.find(t => t.id === id);
+    if (todo) {
+      await this.updateTodo(id, { completed: !todo.completed });
+    }
+  }
+
+  getFilteredTodos(filter: 'all' | 'active' | 'completed'): Observable<Todo[]> {
+    return this.todos$.pipe(
+      map(todos => {
+        switch (filter) {
+          case 'active':
+            return todos.filter(t => !t.completed);
+          case 'completed':
+            return todos.filter(t => t.completed);
+          default:
+            return todos;
+        }
+      })
+    );
+  }
+
+  searchTodos(query: string): Observable<Todo[]> {
+    return this.todos$.pipe(
+      map(todos => todos.filter(t => 
+        t.title.toLowerCase().includes(query.toLowerCase()) ||
+        t.description?.toLowerCase().includes(query.toLowerCase())
+      ))
+    );
+  }
+
+  private async saveTodos() {
+    await this.storage.set('todos', this.todosSubject.value);
+  }
+}
+```
+
+### 3. Components
+
+#### Login Page
+
+```typescript
+export class LoginPage {
+  loginForm: FormGroup;
+  loading = false;
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private toastCtrl: ToastController
+  ) {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
+
+  async onSubmit() {
+    if (this.loginForm.valid) {
+      this.loading = true;
+      try {
+        await this.authService.login(
+          this.loginForm.value.email,
+          this.loginForm.value.password
+        );
+        this.router.navigate(['/tabs/home']);
+      } catch (error) {
+        const toast = await this.toastCtrl.create({
+          message: 'Login failed. Please check your credentials.',
+          duration: 3000,
+          color: 'danger'
+        });
+        await toast.present();
+      } finally {
+        this.loading = false;
+      }
+    }
+  }
+}
+```
+
+#### Home Page (Todo List)
+
+```typescript
+export class HomePage implements OnInit {
+  todos$!: Observable<Todo[]>;
+  filter: 'all' | 'active' | 'completed' = 'all';
+  searchQuery = '';
+
+  constructor(
+    private todoService: TodoService,
+    private router: Router,
+    private alertCtrl: AlertController
+  ) {}
+
+  ngOnInit() {
+    this.loadTodos();
+  }
+
+  loadTodos() {
+    if (this.searchQuery) {
+      this.todos$ = this.todoService.searchTodos(this.searchQuery);
+    } else {
+      this.todos$ = this.todoService.getFilteredTodos(this.filter);
+    }
+  }
+
+  onFilterChange(event: any) {
+    this.filter = event.detail.value;
+    this.loadTodos();
+  }
+
+  onSearch(event: any) {
+    this.searchQuery = event.detail.value || '';
+    this.loadTodos();
+  }
+
+  async toggleComplete(todo: Todo) {
+    await this.todoService.toggleComplete(todo.id);
+  }
+
+  async deleteTodo(todo: Todo) {
+    const alert = await this.alertCtrl.create({
+      header: 'Confirm Delete',
+      message: `Delete "${todo.title}"?`,
+      buttons: [
+        'Cancel',
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: async () => {
+            await this.todoService.deleteTodo(todo.id);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  viewTodo(todo: Todo) {
+    this.router.navigate(['/todo-detail', todo.id]);
+  }
+
+  async doRefresh(event: any) {
+    await this.todoService.loadTodos();
+    event.target.complete();
+  }
+}
+```
+
+### 4. Bonus Features
+
+**Dark Mode:**
+```typescript
+export class ThemeService {
+  private darkMode = false;
+
+  constructor() {
+    this.loadTheme();
+  }
+
+  async toggleDarkMode() {
+    this.darkMode = !this.darkMode;
+    document.body.classList.toggle('dark', this.darkMode);
+    await Preferences.set({ key: 'darkMode', value: String(this.darkMode) });
+  }
+
+  private async loadTheme() {
+    const { value } = await Preferences.get({ key: 'darkMode' });
+    this.darkMode = value === 'true';
+    document.body.classList.toggle('dark', this.darkMode);
+  }
+}
+```
+
+## Testing Your App
+
+1. **Functionality Testing**
+   - Test all CRUD operations
+   - Test filters and search
+   - Test offline mode
+   - Test authentication flow
+
+2. **UI/UX Testing**
+   - Test on different screen sizes
+   - Test dark mode
+   - Test animations
+   - Test loading states
+
+3. **Error Handling**
+   - Test with no internet
+   - Test with invalid inputs
+   - Test API errors
+
+## Submission Guidelines
+
+### What to Submit
+
+1. **Source Code**
+   - GitHub repository link
+   - Include README with setup instructions
+
+2. **Demo**
+   - Video walkthrough (2-3 minutes)
+   - Or deployed web version
+
+3. **Documentation**
+   - Features implemented
+   - Challenges faced
+   - What you learned
+
+## Grading Criteria
+
+| Criteria | Points |
+|----------|--------|
+| Authentication | 15 |
+| Todo CRUD | 25 |
+| UI/UX Design | 20 |
+| State Management | 15 |
+| Error Handling | 10 |
+| Code Quality | 10 |
+| Documentation | 5 |
+| **Total** | **100** |
+
+## Going Further
+
+### Ideas for Enhancement
+
+1. **Advanced Features**
+   - Subtasks
+   - Recurring todos
+   - Reminders/Notifications
+   - Collaboration (share todos)
+   - File attachments
+
+2. **Gamification**
+   - Points system
+   - Achievements
+   - Streaks
+
+3. **Analytics**
+   - Completion rate
+   - Productivity insights
+   - Time tracking
+
+4. **Social**
+   - Share todos on social media
+   - Leaderboards
+   - Friends system
+
+## Congratulations! 🎉
+
+Anda telah menyelesaikan course Pemrograman Piranti Bergerak!
+
+### What You've Learned
+
+✅ Mobile development fundamentals
+✅ Ionic Framework
+✅ Angular basics
+✅ UI/UX design
+✅ Navigation patterns
+✅ Form handling
+✅ HTTP & APIs
+✅ Native features
+✅ State management
+✅ App deployment
+
+### Next Steps
+
+1. **Build Your Portfolio**
+   - Create 2-3 more apps
+   - Publish to app stores
+   - Showcase on LinkedIn/GitHub
+
+2. **Keep Learning**
+   - Advanced state management (NgRx)
+   - Testing (Jest, Cypress)
+   - Performance optimization
+   - Progressive Web Apps
+
+3. **Join Communities**
+   - Ionic Forum
+   - Angular Discord
+   - Local meetups
+
+### Resources
+
+- [Ionic Docs](https://ionicframework.com/docs)
+- [Angular University](https://angular-university.io/)
+- [Capacitor Plugins](https://capacitorjs.com/docs/plugins)
+- [Ionic Marketplace](https://market.ionicframework.com/)
+
+**Good luck with your mobile development journey!** 🚀
+
+---
+
+*Created with ❤️ for Universitas Terbuka students*

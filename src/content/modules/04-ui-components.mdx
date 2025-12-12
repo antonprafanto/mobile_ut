@@ -1,0 +1,542 @@
+# UI Components
+
+Ionic menyediakan library komponen UI yang kaya dan siap pakai. Mari explore komponen-komponen penting dan cara menggunakannya.
+
+## Button Components
+
+### Basic Buttons
+
+```html
+<!-- Default button -->
+<ion-button>Default</ion-button>
+
+<!-- Button dengan color -->
+<ion-button color="primary">Primary</ion-button>
+<ion-button color="secondary">Secondary</ion-button>
+<ion-button color="success">Success</ion-button>
+<ion-button color="warning">Warning</ion-button>
+<ion-button color="danger">Danger</ion-button>
+
+<!-- Button fills -->
+<ion-button fill="solid">Solid</ion-button>
+<ion-button fill="outline">Outline</ion-button>
+<ion-button fill="clear">Clear</ion-button>
+
+<!-- Button sizes -->
+<ion-button size="small">Small</ion-button>
+<ion-button size="default">Default</ion-button>
+<ion-button size="large">Large</ion-button>
+
+<!-- Full width -->
+<ion-button expand="full">Full Width</ion-button>
+<ion-button expand="block">Block</ion-button>
+
+<!-- With icons -->
+<ion-button>
+  <ion-icon slot="start" name="star"></ion-icon>
+  Favorit
+</ion-button>
+
+<ion-button>
+  Submit
+  <ion-icon slot="end" name="arrow-forward"></ion-icon>
+</ion-button>
+
+<!-- Icon only -->
+<ion-button>
+  <ion-icon slot="icon-only" name="heart"></ion-icon>
+</ion-button>
+```
+
+## Input Components
+
+### Text Input
+
+```html
+<ion-item>
+  <ion-label position="floating">Username</ion-label>
+  <ion-input 
+    type="text" 
+    placeholder="Enter username"
+    [(ngModel)]="username">
+  </ion-input>
+</ion-item>
+
+<ion-item>
+  <ion-label position="stacked">Email</ion-label>
+  <ion-input 
+    type="email" 
+    placeholder="john@example.com">
+  </ion-input>
+</ion-item>
+
+<ion-item>
+  <ion-label position="fixed">Password</ion-label>
+  <ion-input type="password"></ion-input>
+</ion-item>
+```
+
+### Other Input Types
+
+```html
+<!-- Textarea -->
+<ion-item>
+  <ion-label position="floating">Description</ion-label>
+  <ion-textarea 
+    rows="4" 
+    placeholder="Enter description">
+  </ion-textarea>
+</ion-item>
+
+<!-- Select -->
+<ion-item>
+  <ion-label>Category</ion-label>
+  <ion-select placeholder="Select one">
+    <ion-select-option value="tech">Technology</ion-select-option>
+    <ion-select-option value="health">Health</ion-select-option>
+    <ion-select-option value="food">Food</ion-select-option>
+  </ion-select>
+</ion-item>
+
+<!-- Checkbox -->
+<ion-item>
+  <ion-checkbox slot="start"></ion-checkbox>
+  <ion-label>I agree to terms</ion-label>
+</ion-item>
+
+<!-- Radio -->
+<ion-radio-group>
+  <ion-item>
+    <ion-label>Male</ion-label>
+    <ion-radio slot="start" value="male"></ion-radio>
+  </ion-item>
+  <ion-item>
+    <ion-label>Female</ion-label>
+    <ion-radio slot="start" value="female"></ion-radio>
+  </ion-item>
+</ion-radio-group>
+
+<!-- Toggle -->
+<ion-item>
+  <ion-label>Notifications</ion-label>
+  <ion-toggle slot="end"></ion-toggle>
+</ion-item>
+
+<!-- Range -->
+<ion-item>
+  <ion-range min="0" max="100" step="5">
+    <ion-label slot="start">0</ion-label>
+    <ion-label slot="end">100</ion-label>
+  </ion-range>
+</ion-item>
+```
+
+## List Components
+
+### Basic List
+
+```html
+<ion-list>
+  <ion-item>
+    <ion-label>Item 1</ion-label>
+  </ion-item>
+  <ion-item>
+    <ion-label>Item 2</ion-label>
+  </ion-item>
+  <ion-item>
+    <ion-label>Item 3</ion-label>
+  </ion-item>
+</ion-list>
+```
+
+### List with Details
+
+```html
+<ion-list>
+  <ion-item *ngFor="let user of users" button (click)="viewProfile(user)">
+    <ion-avatar slot="start">
+      <img [src]="user.avatar">
+    </ion-avatar>
+    <ion-label>
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.email }}</p>
+    </ion-label>
+    <ion-badge slot="end" color="primary">{{ user.points }}</ion-badge>
+  </ion-item>
+</ion-list>
+```
+
+### Sliding Items
+
+```html
+<ion-item-sliding>
+  <ion-item>
+    <ion-label>Item with actions</ion-label>
+  </ion-item>
+  
+  <ion-item-options side="end">
+    <ion-item-option color="primary" (click)="edit()">
+      <ion-icon slot="icon-only" name="create"></ion-icon>
+    </ion-item-option>
+    <ion-item-option color="danger" (click)="delete()">
+      <ion-icon slot="icon-only" name="trash"></ion-icon>
+    </ion-item-option>
+  </ion-item-options>
+</ion-item-sliding>
+```
+
+## Card Components
+
+```html
+<!-- Basic Card -->
+<ion-card>
+  <ion-card-header>
+    <ion-card-title>Card Title</ion-card-title>
+    <ion-card-subtitle>Card Subtitle</ion-card-subtitle>
+  </ion-card-header>
+  <ion-card-content>
+    Card content goes here
+  </ion-card-content>
+</ion-card>
+
+<!-- Card with Image -->
+<ion-card>
+  <img src="assets/card-image.jpg">
+  <ion-card-header>
+    <ion-card-title>Beautiful Place</ion-card-title>
+  </ion-card-header>
+  <ion-card-content>
+    <p>Description here...</p>
+  </ion-card-content>
+</ion-card>
+
+<!-- Interactive Card -->
+<ion-card button (click)="cardClicked()">
+  <ion-card-header>
+    <ion-card-title>Clickable Card</ion-card-title>
+  </ion-card-header>
+</ion-card>
+```
+
+## Grid System
+
+```html
+<!-- Basic Grid -->
+<ion-grid>
+  <ion-row>
+    <ion-col size="12" size-md="6" size-lg="4">
+      <div class="box">Column 1</div>
+    </ion-col>
+    <ion-col size="12" size-md="6" size-lg="4">
+      <div class="box">Column 2</div>
+    </ion-col>
+    <ion-col size="12" size-md="6" size-lg="4">
+      <div class="box">Column 3</div>
+    </ion-col>
+  </ion-row>
+</ion-grid>
+
+<!-- Size Breakpoints -->
+<!-- size: all screens -->
+<!-- size-sm: ≥576px -->
+<!-- size-md: ≥768px -->
+<!-- size-lg: ≥992px -->
+<!-- size-xl: ≥1200px -->
+
+<!-- Equal Width Columns -->
+<ion-row>
+  <ion-col>Column 1</ion-col>
+  <ion-col>Column 2</ion-col>
+  <ion-col>Column 3</ion-col>
+</ion-row>
+
+<!-- Offset -->
+<ion-row>
+  <ion-col size="3" offset="3">
+    Offset 3 columns
+  </ion-col>
+</ion-row>
+```
+
+## Loading & Spinner
+
+```typescript
+// loading.ts
+import { LoadingController } from '@ionic/angular/standalone';
+
+export class MyPage {
+  constructor(private loadingCtrl: LoadingController) {}
+
+  async showLoading() {
+    const loading = await this.loadingCtrl.create({
+      message: 'Please wait...',
+      duration: 3000,
+      spinner: 'circles'
+    });
+
+    await loading.present();
+  }
+}
+```
+
+```html
+<!-- Inline Spinner -->
+<ion-spinner name="circles"></ion-spinner>
+<ion-spinner name="dots"></ion-spinner>
+<ion-spinner name="crescent"></ion-spinner>
+```
+
+## Toast Notifications
+
+```typescript
+import { ToastController } from '@ionic/angular/standalone';
+
+export class MyPage {
+  constructor(private toastCtrl: ToastController) {}
+
+  async showToast() {
+    const toast = await this.toastCtrl.create({
+      message: 'Data saved successfully!',
+      duration: 2000,
+      position: 'bottom',
+      color: 'success',
+      icon: 'checkmark-circle'
+    });
+
+    await toast.present();
+  }
+}
+```
+
+## Alert Dialogs
+
+```typescript
+import { AlertController } from '@ionic/angular/standalone';
+
+export class MyPage {
+  constructor(private alertCtrl: AlertController) {}
+
+  async showAlert() {
+    const alert = await this.alertCtrl.create({
+      header: 'Confirm',
+      message: 'Are you sure?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'OK',
+          handler: () => {
+            console.log('Confirmed!');
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  async showPrompt() {
+    const alert = await this.alertCtrl.create({
+      header: 'Enter Name',
+      inputs: [
+        {
+          name: 'username',
+          type: 'text',
+          placeholder: 'Username'
+        }
+      ],
+      buttons: [
+        'Cancel',
+        {
+          text: 'Save',
+          handler: (data) => {
+            console.log('Username:', data.username);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+}
+```
+
+## Theming & Styling
+
+### CSS Variables
+
+```scss
+// theme/variables.scss
+:root {
+  --ion-color-primary: #3880ff;
+  --ion-color-primary-rgb: 56, 128, 255;
+  --ion-color-primary-contrast: #ffffff;
+  
+  --ion-font-family: 'Inter', sans-serif;
+}
+
+// Component-specific
+ion-card {
+  --background: #f4f5f8;
+  --color: #000;
+  border-radius: 12px;
+}
+```
+
+### Custom Colors
+
+```scss
+// Add in variables.scss
+.ion-color-instagram {
+  --ion-color-base: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+  --ion-color-contrast: #ffffff;
+}
+```
+
+```html
+<ion-button color="instagram">Follow</ion-button>
+```
+
+### Component Styling
+
+```scss
+// page.scss
+.welcome-card {
+  ion-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+  }
+  
+  ion-card-content {
+    padding: 20px;
+    
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #666;
+    }
+  }
+}
+```
+
+## Practical Example: Product List
+
+```typescript
+// products.page.ts
+export class ProductsPage {
+  products = [
+    {
+      id: 1,
+      name: 'Laptop',
+      price: 15000000,
+      image: 'assets/laptop.jpg',
+      stock: 5,
+      rating: 4.5
+    },
+    {
+      id: 2,
+      name: 'Mouse',
+      price: 250000,
+      image: 'assets/mouse.jpg',
+      stock: 15,
+      rating: 4.0
+    }
+  ];
+
+  constructor(
+    private toastCtrl: ToastController,
+    private alertCtrl: AlertController
+  ) {}
+
+  async addToCart(product: any) {
+    const toast = await this.toastCtrl.create({
+      message: `${product.name} added to cart`,
+      duration: 2000,
+      color: 'success',
+      icon: 'cart'
+    });
+    await toast.present();
+  }
+
+  async deleteProduct(product: any) {
+    const alert = await this.alertCtrl.create({
+      header: 'Confirm Delete',
+      message: `Delete ${product.name}?`,
+      buttons: [
+        'Cancel',
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: () => {
+            // Delete logic
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+}
+```
+
+```html
+<!-- products.page.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Products</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ion-icon name="cart"></ion-icon>
+        <ion-badge color="danger">3</ion-badge>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-grid>
+    <ion-row>
+      <ion-col size="12" size-md="6" *ngFor="let product of products">
+        <ion-card>
+          <img [src]="product.image">
+          <ion-card-header>
+            <ion-card-title>{{ product.name }}</ion-card-title>
+            <ion-card-subtitle>
+              Rp {{ product.price | number }}
+            </ion-card-subtitle>
+          </ion-card-header>
+          
+          <ion-card-content>
+            <div class="product-info">
+              <ion-badge color="primary">Stock: {{ product.stock }}</ion-badge>
+              <div class="rating">
+                <ion-icon name="star" color="warning"></ion-icon>
+                {{ product.rating }}
+              </div>
+            </div>
+            
+            <ion-button expand="block" (click)="addToCart(product)">
+              <ion-icon slot="start" name="cart"></ion-icon>
+              Add to Cart
+            </ion-button>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>
+```
+
+## Best Practices
+
+1. **Use Ionic Components** - Jangan recreate yang sudah ada
+2. **Consistent Spacing** - Gunakan padding utilities: `ion-padding`, `ion-margin`
+3. **Responsive Design** - Test di berbagai screen sizes
+4. **Dark Mode** - Support dengan CSS variables
+5. **Accessible** - Gunakan proper labels dan ARIA attributes
+
+---
+
+**Next:** Module 05 - Navigation! 🧭

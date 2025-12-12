@@ -1,0 +1,582 @@
+# Native Features
+
+Capacitor memungkinkan akses ke fitur native device. Module ini mengajarkan cara menggunakan camera, geolocation, storage, dan plugin lainnya.
+
+## Capacitor Overview
+
+Capacitor adalah native runtime yang menjembatani web app dengan native APIs.
+
+### Installation
+
+```bash
+npm install @capacitor/core @capacitor/cli
+
+# Initialize
+npx cap init
+
+# Add platforms
+npx cap add android
+npx cap add ios
+```
+
+### Configuration
+
+```typescript
+// capacitor.config.ts
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.yourcompany.app',
+  appName: 'My Ionic App',
+  webDir: 'www',
+  server: {
+    androidScheme: 'https'
+  }
+};
+
+export default config;
+```
+
+## Camera
+
+### Installation
+
+```bash
+npm install @capacitor/camera
+npx cap sync
+```
+
+### Implementation
+
+```typescript
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+
+export class PhotoPage {
+  photo: string | undefined;
+
+  async takePicture() {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera
+      });
+
+      this.photo = image.dataUrl;
+    } catch (error) {
+      console.error('Error taking photo:', error);
+    }
+  }
+
+  async selectFromGallery() {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: true,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Photos
+    });
+
+    this.photo = image.dataUrl;
+  }
+
+  async chooseSource() {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Prompt // Show picker
+    });
+
+    this.photo = image.dataUrl;
+  }
+}
+```
+
+```html
+<ion-content>
+  <ion-button (click)="takePicture()">
+    <ion-icon name="camera"></ion-icon>
+    Take Photo
+  </ion-button>
+
+  <ion-button (click)="selectFromGallery()">
+    <ion-icon name="images"></ion-icon>
+    From Gallery
+  </ion-button>
+
+  <img *ngIf="photo" [src]="photo">
+</ion-content>
+```
+
+## Geolocation
+
+### Installation
+
+```bash
+npm install @capacitor/geolocation
+npx cap sync
+```
+
+### Get Current Position
+
+```typescript
+import { Geolocation } from '@capacitor/geolocation';
+
+export class MapPage {
+  latitude: number | null = null;
+  longitude: number | null = null;
+
+  async getCurrentPosition() {
+    try {
+      const coordinates = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000
+      });
+
+      this.latitude = coordinates.coords.latitude;
+      this.longitude = coordinates.coords.longitude;
+
+      console.log('Position:', coordinates);
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+  }
+
+  async checkPermissions() {
+    const permission = await Geolocation.checkPermissions();
+    console.log('Permission status:', permission.location);
+
+    if (permission.location !== 'granted') {
+      const request = await Geolocation.requestPermissions();
+      console.log('New permission:', request.location);
+    }
+  }
+
+  // Watch position (real-time tracking)
+  watchId: string | null = null;
+
+  async watchPosition() {
+    this.watchId = await Geolocation.watchPosition(
+      {
+        enableHighAccuracy: true,
+        timeout: 5000
+      },
+      (position, err) => {
+        if (err) {
+          console.error('Watch error:', err);
+          return;
+        }
+
+        if (position) {
+          this.latitude = position.coords.latitude;
+          this.longitude = position.coords.longitude;
+          console.log('Updated position:', position);
+        }
+      }
+    );
+  }
+
+  stopWatching() {
+    if (this.watchId) {
+      Geolocation.clearWatch({ id: this.watchId });
+    }
+  }
+}
+```
+
+## Local Storage
+
+### Preferences (Key-Value Storage)
+
+```bash
+npm install @capacitor/preferences
+npx cap sync
+```
+
+```typescript
+import { Preferences } from '@capacitor/preferences';
+
+export class StorageService {
+  // Save data
+  async saveUser(user: any) {
+    await Preferences.set({
+      key: 'user',
+      value: JSON.stringify(user)
+    });
+  }
+
+  // Get data
+  async getUser() {
+    const { value } = await Preferences.get({ key: 'user' });
+    return value ? JSON.parse(value) : null;
+  }
+
+  // Remove data
+  async removeUser() {
+    await Preferences.remove({ key: 'user' });
+  }
+
+  // Clear all
+  async clearAll() {
+    await Preferences.clear();
+  }
+
+  // Get all keys
+  async getAllKeys() {
+    const { keys } = await Preferences.keys();
+    return keys;
+  }
+}
+```
+
+### Filesystem
+
+```bash
+npm install @capacitor/filesystem
+```
+
+```typescript
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+
+export class FileService {
+  // Write file
+  async writeFile(filename: string, content: string) {
+    await Filesystem.writeFile({
+      path: filename,
+      data: content,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8
+    });
+  }
+
+  // Read file
+  async readFile(filename: string) {
+    const contents = await Filesystem.readFile({
+      path: filename,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8
+    });
+
+    return contents.data;
+  }
+
+  // Delete file
+  async deleteFile(filename: string) {
+    await Filesystem.deleteFile({
+      path: filename,
+      directory: Directory.Documents
+    });
+  }
+
+  // List files
+  async listFiles() {
+    const result = await Filesystem.readdir({
+      path: '',
+      directory: Directory.Documents
+    });
+
+    return result.files;
+  }
+
+  // Download and save image
+  async downloadImage(url: string, filename: string) {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const base64 = await this.convertBlobToBase64(blob);
+
+    await Filesystem.writeFile({
+      path: filename,
+      data: base64,
+      directory: Directory.Data
+    });
+  }
+
+  private convertBlobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+}
+```
+
+## Share
+
+```bash
+npm install @capacitor/share
+```
+
+```typescript
+import { Share } from '@capacitor/share';
+
+export class SharePage {
+  async shareText() {
+    await Share.share({
+      title: 'Check this out!',
+      text: 'Really awesome app',
+      url: 'https://myapp.com',
+      dialogTitle: 'Share with friends'
+    });
+  }
+
+  async canShare() {
+    const result = await Share.canShare();
+    console.log('Can share:', result.value);
+  }
+}
+```
+
+## Device Info
+
+```bash
+npm install @capacitor/device
+```
+
+```typescript
+import { Device } from '@capacitor/device';
+
+export class DeviceInfoPage {
+  async getDeviceInfo() {
+    const info = await Device.getInfo();
+    console.log('Device info:', info);
+    /*
+    {
+      model: 'iPhone',
+      platform: 'ios',
+      operatingSystem: 'ios',
+      osVersion: '15.0',
+      manufacturer: 'Apple',
+      isVirtual: false,
+      webViewVersion: '15.0'
+    }
+    */
+  }
+
+  async getBatteryInfo() {
+    const info = await Device.getBatteryInfo();
+    console.log('Battery:', info.batteryLevel, info.isCharging);
+  }
+
+  async getLanguageCode() {
+    const code = await Device.getLanguageCode();
+    console.log('Language:', code.value); // 'en', 'id', etc
+  }
+}
+```
+
+## Push Notifications
+
+```bash
+npm install @capacitor/push-notifications
+```
+
+```typescript
+import { PushNotifications } from '@capacitor/push-notifications';
+
+export class NotificationService {
+  async initPush() {
+    // Request permission
+    let permStatus = await PushNotifications.checkPermissions();
+
+    if (permStatus.receive === 'prompt') {
+      permStatus = await PushNotifications.requestPermissions();
+    }
+
+    if (permStatus.receive !== 'granted') {
+      throw new Error('User denied permissions!');
+    }
+
+    // Register
+    await PushNotifications.register();
+
+    // Listeners
+    PushNotifications.addListener('registration', (token) => {
+      console.log('Push registration success, token:', token.value);
+      // Send token to your server
+    });
+
+    PushNotifications.addListener('registrationError', (error) => {
+      console.error('Error on registration:', error);
+    });
+
+    PushNotifications.addListener(
+      'pushNotificationReceived',
+      (notification) => {
+        console.log('Push received:', notification);
+      }
+    );
+
+    PushNotifications.addListener(
+      'pushNotificationActionPerformed',
+      (notification) => {
+        console.log('Push action performed:', notification);
+      }
+    );
+  }
+
+  async getDeliveredNotifications() {
+    const notificationList = await PushNotifications.getDeliveredNotifications();
+    console.log('Delivered notifications:', notificationList);
+  }
+}
+```
+
+## Haptics (Vibration)
+
+```bash
+npm install @capacitor/haptics
+```
+
+```typescript
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+
+export class HapticsExample {
+  async lightImpact() {
+    await Haptics.impact({ style: ImpactStyle.Light });
+  }
+
+  async mediumImpact() {
+    await Haptics.impact({ style: ImpactStyle.Medium });
+  }
+
+  async heavyImpact() {
+    await Haptics.impact({ style: ImpactStyle.Heavy });
+  }
+
+  async vibrate() {
+    await Haptics.vibrate({ duration: 1000 });
+  }
+
+  async selectionChanged() {
+    await Haptics.selectionStart();
+    // Do something
+    await Haptics.selectionChanged();
+    // Do something
+    await Haptics.selectionEnd();
+  }
+}
+```
+
+## Network Status
+
+```bash
+npm install @capacitor/network
+```
+
+```typescript
+import { Network } from '@capacitor/network';
+
+export class NetworkService {
+  async getStatus() {
+    const status = await Network.getStatus();
+    console.log('Network status:', status);
+    /*
+    {
+      connected: true,
+      connectionType: 'wifi'
+    }
+    */
+  }
+
+  initNetworkListener() {
+    Network.addListener('networkStatusChange', status => {
+      console.log('Network status changed', status);
+      
+      if (!status.connected) {
+        this.showOfflineMessage();
+      }
+    });
+  }
+
+  showOfflineMessage() {
+    // Show offline indicator
+  }
+}
+```
+
+## App State
+
+```bash
+npm install @capacitor/app
+```
+
+```typescript
+import { App } from '@capacitor/app';
+
+export class AppStateService {
+  initAppListeners() {
+    // App state change
+    App.addListener('appStateChange', ({ isActive }) => {
+      console.log('App state changed. Is active?', isActive);
+      
+      if (isActive) {
+        this.refreshData();
+      }
+    });
+
+    // App URL open (deep link)
+    App.addListener('appUrlOpen', data => {
+      console.log('App opened with URL:', data.url);
+      // Navigate to specific page
+    });
+
+    // Back button
+    App.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        App.exitApp();
+      }
+    });
+  }
+
+  async exitApp() {
+    await App.exitApp();
+  }
+
+  async getInfo() {
+    const info = await App.getInfo();
+    console.log('App info:', info);
+    /*
+    {
+      name: 'MyApp',
+      id: 'com.myapp',
+      build: '1',
+      version: '1.0.0'
+    }
+    */
+  }
+}
+```
+
+## Best Practices
+
+1. **Check Permissions** before accessing features
+2. **Handle Errors** gracefully
+3. **Test on Real Device** - simulators have limitations
+4. **Platform-Specific Code**:
+   ```typescript
+   import { Capacitor } from '@capacitor/core';
+   
+   if (Capacitor.getPlatform() === 'ios') {
+     // iOS specific
+   } else if (Capacitor.getPlatform() === 'android') {
+     // Android specific
+   }
+   ```
+5. **Check Availability**:
+   ```typescript
+   import { Camera } from '@capacitor/camera';
+   
+   if (Capacitor.isPluginAvailable('Camera')) {
+     // Camera is available
+   }
+   ```
+
+---
+
+**Next:** Module 09 - State Management! 🗂️

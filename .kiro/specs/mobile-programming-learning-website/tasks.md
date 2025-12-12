@@ -1,0 +1,239 @@
+# Implementation Plan
+
+- [x] 1. Set up project structure and core configuration
+  - [x] 1.1 Initialize Next.js project with TypeScript and static export configuration
+    - Configure `next.config.js` for static export and GitHub Pages base path
+    - Set up TypeScript configuration
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x] 1.2 Configure Tailwind CSS with dark mode support
+    - Install and configure Tailwind CSS
+    - Set up dark mode class strategy
+    - Define color palette for light/dark themes
+    - _Requirements: 5.1, 5.2_
+  - [x] 1.3 Set up Vitest and fast-check testing framework
+    - Install Vitest, React Testing Library, and fast-check
+    - Configure vitest.config.ts with jsdom environment
+    - Create test setup file
+    - _Requirements: Design - Testing Strategy_
+  - [x] 1.4 Configure MDX support for content
+    - Install and configure @next/mdx
+    - Set up MDX components mapping
+    - _Requirements: 6.1, 6.2_
+
+- [x] 2. Implement core data models and utilities
+  - [x] 2.1 Create TypeScript interfaces for Module, Progress, Search, and Theme
+    - Define Module, ProgressState, SearchResult, SearchResponse, ThemeState interfaces
+    - Define CodeExample, CodeFile interfaces
+    - _Requirements: 2.1, 2.2, 4.1, 8.1_
+  - [x] 2.2 Write property test for module ordering consistency
+    - **Property 1: Module ordering consistency**
+    - **Validates: Requirements 2.2**
+  - [x] 2.3 Implement Progress Tracker with localStorage persistence
+    - Create markComplete, isComplete, getProgress functions
+    - Implement data validation on load
+    - Handle localStorage unavailability gracefully
+    - _Requirements: 4.1, 4.2_
+  - [x] 2.4 Write property test for progress persistence round-trip
+    - **Property 7: Progress persistence round-trip**
+    - **Validates: Requirements 4.1, 4.2**
+  - [x] 2.5 Implement Theme Manager with system preference detection
+    - Create theme toggle functionality
+    - Persist theme preference to localStorage
+    - Detect and respect system color scheme preference
+    - _Requirements: 5.1_
+  - [x] 2.6 Write property test for dark mode toggle round-trip
+    - **Property 9: Dark mode toggle round-trip**
+    - **Validates: Requirements 5.1**
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Build UI component library
+  - [x] 4.1 Create Layout component with responsive sidebar navigation
+    - Implement persistent sidebar for desktop (>1024px)
+    - Implement hamburger menu for mobile/tablet
+    - Display all modules with completion status indicators
+    - _Requirements: 1.1, 1.3, 4.3_
+  - [x] 4.2 Write property test for progress indicator accuracy
+    - **Property 8: Progress indicator accuracy**
+    - **Validates: Requirements 4.3**
+  - [x] 4.3 Create CodePlayground component with syntax highlighting
+    - Integrate Prism.js or Shiki for syntax highlighting
+    - Display line numbers
+    - Support file tabs for multi-file examples
+    - Implement copy-to-clipboard with toast notification
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - [x] 4.4 Write property tests for code display
+    - **Property 4: Syntax highlighting output validity**
+    - **Property 5: Code display - line numbers**
+    - **Property 6: Multi-file code display - file labels**
+    - **Validates: Requirements 3.1, 3.3, 3.4**
+  - [x] 4.5 Create ReadingProgressIndicator component
+    - Display scroll position as percentage bar
+    - Use Intersection Observer for performance
+    - Show current section name based on visible headings
+    - _Requirements: 1.4_
+  - [x] 4.6 Write property test for reading progress indicator accuracy
+    - **Property 16: Reading progress indicator accuracy**
+    - **Validates: Requirements 1.4**
+  - [x] 4.7 Create ThemeToggle component
+    - Implement dark/light mode switch button
+    - Apply smooth transition between themes
+    - _Requirements: 5.1, 5.4_
+  - [x] 4.8 Implement typography and animation system
+    - Configure readable typography (18px base, 1.7 line-height)
+    - Implement CSS transitions for UI interactions
+    - Respect prefers-reduced-motion setting
+    - _Requirements: 5.3, 5.4_
+  - [x] 4.9 Write property test for animation accessibility
+    - **Property 19: Animation accessibility**
+    - **Validates: Requirements 5.4**
+
+- [x] 5. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Implement search functionality
+  - [x] 6.1 Create search index builder for build time
+    - Parse all MDX content into searchable index
+    - Extract module titles, section titles, and content
+    - Generate search index JSON file
+    - _Requirements: 8.1_
+  - [x] 6.2 Implement SearchEngine with Fuse.js
+    - Configure fuzzy search with appropriate threshold
+    - Implement debounced search (300ms)
+    - Return results with relevance scores
+    - Provide suggestions when no results found
+    - _Requirements: 8.1, 8.2, 8.4_
+  - [x] 6.3 Write property tests for search functionality
+    - **Property 14: Search relevance**
+    - **Property 15: Search keyword highlighting**
+    - **Property 20: Search no-results suggestions**
+    - **Validates: Requirements 8.1, 8.2, 8.4**
+  - [x] 6.4 Create SearchBar and SearchResults components
+    - Implement search input with keyboard navigation
+    - Display results with highlighted keywords
+    - Navigate to relevant section on result click
+    - _Requirements: 8.1, 8.2, 8.3_
+
+- [x] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Create module content structure and pages
+  - [x] 8.1 Set up module directory structure and MDX templates
+    - Create modules/ directory with 11 module folders
+    - Define MDX frontmatter schema
+    - Create reusable MDX components
+    - _Requirements: 6.1_
+  - [x] 8.2 Write property tests for module structure
+    - **Property 2: Module structure - learning objectives**
+    - **Property 3: Module structure - summary**
+    - **Property 10: Module content completeness**
+    - **Property 11: Module external resources**
+    - **Validates: Requirements 2.3, 2.4, 6.2, 6.3**
+  - [x] 8.3 Create Module 1: Pengenalan Mobile Development & Ionic
+    - Write introduction to mobile development concepts
+    - Include Ionic Framework overview
+    - Add learning objectives and summary
+    - _Requirements: 2.1, 2.3, 2.4, 6.1_
+  - [x] 8.4 Create Module 2: Environment Setup
+    - Document Node.js, Ionic CLI, VS Code setup
+    - Include step-by-step installation guides
+    - Add code examples for CLI commands
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.5 Create Module 3: Ionic Basics
+    - Cover project structure, pages, components
+    - Include practical code examples
+    - Link to official documentation
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [x] 8.6 Create Module 4: UI Components
+    - Document Ionic UI components library
+    - Provide interactive examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.7 Create Module 5: Navigation
+    - Cover routing, tabs, side menu
+    - Include navigation code examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.8 Create Module 6: Forms
+    - Document form handling and validation
+    - Provide form implementation examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.9 Create Module 7: HTTP & Data
+    - Cover HTTP requests and API integration
+    - Include practical API examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.10 Create Module 8: Native Features
+    - Document camera, geolocation, storage
+    - Provide native feature examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.11 Create Module 9: State Management
+    - Cover state patterns and services
+    - Include state management examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.12 Create Module 10: Deployment
+    - Document build and deploy to app stores
+    - Include deployment configuration examples
+    - _Requirements: 6.1, 6.2_
+  - [x] 8.13 Create Module 11: Final Project Tutorial
+    - Provide step-by-step complete app tutorial
+    - Include all code with explanations
+    - Add checkpoints for progress verification
+    - _Requirements: 6.4_
+
+- [x] 9. Implement completion certificate feature
+  - [x] 9.1 Create CompletionCertificate page component
+    - Display congratulatory message
+    - Show completion statistics
+    - Allow optional name entry for personalization
+    - Provide printable/shareable view
+    - _Requirements: 4.4_
+  - [x] 9.2 Write property test for completion certificate trigger
+    - **Property 17: Completion certificate trigger**
+    - **Validates: Requirements 4.4**
+
+- [x] 10. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 11. Implement offline support with Service Worker
+  - [x] 11.1 Configure Workbox for service worker generation
+    - Set up caching strategies for static assets
+    - Configure runtime caching for module content
+    - _Requirements: 7.1, 7.2_
+  - [x] 11.2 Write property test for offline content caching
+    - **Property 12: Offline content caching round-trip**
+    - **Validates: Requirements 7.1, 7.2**
+  - [x] 11.3 Create OfflineIndicator component
+    - Display offline status when disconnected
+    - Show online status restoration
+    - _Requirements: 7.3, 7.4_
+  - [x] 11.4 Write property test for offline status indicator
+    - **Property 13: Offline status indicator accuracy**
+    - **Validates: Requirements 7.3**
+
+- [x] 12. Create homepage and navigation integration
+  - [x] 12.1 Build HomePage with course overview
+    - Display course introduction
+    - Show module list with progress
+    - Include getting started section
+    - _Requirements: 1.1_
+  - [x] 12.2 Implement module navigation with performance optimization
+    - Ensure navigation completes within 2 seconds
+    - Add loading states for transitions
+    - _Requirements: 1.2_
+  - [x] 12.3 Write property test for navigation response time
+    - **Property 18: Navigation response time**
+    - **Validates: Requirements 1.2**
+
+- [x] 13. Configure GitHub Pages deployment
+  - [x] 13.1 Set up GitHub Actions workflow for automated deployment
+    - Create build and deploy workflow
+    - Configure base path for GitHub Pages
+    - Set up caching for faster builds
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - [x] 13.2 Verify static export and resource loading
+    - Test all resources load correctly with base path
+    - Verify no server-side dependencies
+    - _Requirements: 9.2, 9.3_
+
+- [x] 14. Final Checkpoint - Ensure all tests pass
+
+  - Ensure all tests pass, ask the user if questions arise.

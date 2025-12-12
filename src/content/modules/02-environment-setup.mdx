@@ -1,0 +1,344 @@
+# Environment Setup
+
+Sebelum kita mulai coding, kita perlu menyiapkan environment pengembangan. Module ini akan memandu Anda step-by-step untuk setup semua tools yang diperlukan.
+
+## Prerequisites
+
+### 1. Node.js dan npm
+
+Node.js adalah JavaScript runtime yang diperlukan untuk menjalankan Ionic CLI. npm (Node Package Manager) termasuk di dalamnya.
+
+#### Download dan Install
+
+1. Kunjungi [nodejs.org](https://nodejs.org/)
+2. Download versi **LTS (Long Term Support)** - lebih stabil
+3. Jalankan installer dan ikuti instruksi
+4. Restart komputer setelah install
+
+#### Verifikasi Instalasi
+
+Buka terminal/command prompt dan jalankan:
+
+```bash
+node --version
+# Output: v18.17.0 (atau versi terbaru)
+
+npm --version
+# Output: 9.6.7 (atau versi terbaru)
+```
+
+✅ Jika muncul nomor versi, instalasi berhasil!
+
+### 2. Ionic CLI
+
+Ionic CLI adalah command-line tool untuk membuat dan mengelola project Ionic.
+
+#### Install Ionic CLI
+
+```bash
+npm install -g @ionic/cli
+```
+
+**Penjelasan:**
+- `npm install`: perintah untuk install package
+- `-g`: install secara global (bisa diakses dari mana saja)
+- `@ionic/cli`: nama package yang diinstall
+
+#### Verifikasi
+
+```bash
+ionic --version
+# Output: 7.1.1 (atau versi terbaru)
+```
+
+### 3. Code Editor: Visual Studio Code
+
+VS Code adalah editor yang paling direkomendasikan untuk Ionic development.
+
+#### Download dan Install
+
+1. Kunjungi [code.visualstudio.com](https://code.visualstudio.com/)
+2. Download untuk OS Anda
+3. Install dengan pengaturan default
+
+#### Extensions yang Direkomendasikan
+
+Buka VS Code, tekan `Ctrl+Shift+X` (atau `Cmd+Shift+X` di Mac), cari dan install:
+
+1. **Angular Language Service**
+   - Autocomplete untuk Angular
+   - Error detection
+   
+2. **Ionic**
+   - Snippets untuk Ionic components
+   - Quick documentation
+   
+3. **ESLint**
+   - Linting untuk code quality
+   
+4. **Prettier**
+   - Auto format code
+   
+5. **Auto Rename Tag**
+   - Rename HTML tags otomatis
+
+#### Konfigurasi VS Code
+
+Buat file `.vscode/settings.json` di project Anda:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.updateImportsOnFileMove.enabled": "always"
+}
+```
+
+## Setup untuk Platform Tertentu
+
+### Android Development (Opsional)
+
+Jika ingin test di Android emulator atau build APK:
+
+#### 1. Install Java Development Kit (JDK)
+
+```bash
+# Cek apakah sudah terinstall
+java -version
+
+# Jika belum, download JDK 11 atau 17 dari:
+# https://adoptium.net/
+```
+
+#### 2. Install Android Studio
+
+1. Download dari [developer.android.com/studio](https://developer.android.com/studio)
+2. Install dengan component:
+   - Android SDK
+   - Android SDK Platform
+   - Android Virtual Device
+3. Buka Android Studio → More Actions → SDK Manager
+4. Install SDK Platform untuk Android 12 atau terbaru
+
+#### 3. Setup Environment Variables
+
+**Windows:**
+```
+ANDROID_HOME = C:\Users\YourName\AppData\Local\Android\Sdk
+Path += %ANDROID_HOME%\platform-tools
+Path += %ANDROID_HOME%\tools
+```
+
+**Mac/Linux:**
+```bash
+# Tambahkan di ~/.bashrc atau ~/.zshrc
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+export PATH=$PATH:$ANDROID_HOME/tools
+```
+
+### iOS Development (Opsional, Mac Only)
+
+#### Install Xcode
+
+1. Buka Mac App Store
+2. Cari "Xcode"
+3. Install (ukuran ~12GB, butuh waktu)
+4. Buka Xcode → Preferences → Locations
+5. Pilih Command Line Tools
+
+#### Install CocoaPods
+
+```bash
+sudo gem install cocoapods
+```
+
+## Membuat Project Ionic Pertama
+
+Mari test setup kita dengan membuat project:
+
+```bash
+# Navigate ke folder projects
+cd ~/Documents
+
+# Buat project baru
+ionic start myFirstApp blank --type=angular
+
+# Pilihan saat ditanya:
+# - Framework? Angular
+# - Create free Ionic account? No (untuk sekarang)
+```
+
+**Struktur Project yang Dibuat:**
+
+```
+myFirstApp/
+├── node_modules/      # Dependencies
+├── src/
+│   ├── app/           # Source code aplikasi
+│   ├── assets/        # Images, icons, dll
+│   ├── theme/         # Styling
+│   └── index.html     # Entry point
+├── angular.json       # Angular config
+├── ionic.config.json  # Ionic config
+├── package.json       # Dependencies list
+└── tsconfig.json      # TypeScript config
+```
+
+## Menjalankan Project
+
+### Development Server
+
+```bash
+cd myFirstApp
+ionic serve
+```
+
+Aplikasi akan terbuka di browser: `http://localhost:8100`
+
+**Hot Reload:** Setiap kali Anda save file, browser otomatis refresh!
+
+### Lab Mode (iOS & Android Preview)
+
+```bash
+ionic serve --lab
+```
+
+Melihat preview iOS dan Android side-by-side.
+
+## Troubleshooting
+
+### Error: Command Not Found
+
+**Masalah:** `ionic: command not found`
+
+**Solusi:**
+```bash
+# Install ulang Ionic CLI
+npm install -g @ionic/cli
+
+# Atau cek PATH
+echo $PATH  # Mac/Linux
+echo %PATH% # Windows
+```
+
+### Error: Port Already in Use
+
+**Masalah:** Port 8100 sudah digunakan
+
+**Solusi:**
+```bash
+# Gunakan port lain
+ionic serve --port=8200
+```
+
+### Error: npm ERR! EACCES
+
+**Masalah:** Permission denied saat install global
+
+**Solusi (Mac/Linux):**
+```bash
+sudo npm install -g @ionic/cli
+```
+
+**Solusi Better (Mac/Linux):**
+```bash
+# Setup npm global tanpa sudo
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+
+# Tambahkan ke PATH
+export PATH=~/.npm-global/bin:$PATH
+```
+
+## Useful Commands
+
+```bash
+# Membuat project baru
+ionic start
+
+# Menjalankan development server
+ionic serve
+
+# Generate page baru
+ionic generate page nama-page
+
+# Generate component
+ionic generate component nama-component
+
+# Build production
+ionic build
+
+# Add platform
+ionic cap add android
+ionic cap add ios
+
+# Help
+ionic --help
+ionic serve --help
+```
+
+## Best Practices
+
+### 1. Node Modules
+```bash
+# JANGAN commit node_modules ke git
+# Tambahkan di .gitignore:
+node_modules/
+```
+
+### 2. Update Dependencies
+```bash
+# Check updates
+npm outdated
+
+# Update package
+npm update
+
+# Update Ionic
+npm install -g @ionic/cli@latest
+```
+
+### 3. Clear Cache (jika ada masalah)
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Reinstall dependencies
+rm -rf node_modules
+npm install
+```
+
+## Checklist Setup
+
+✅ **Environment siap jika:**
+
+- [ ] Node.js dan npm terinstall
+- [ ] Ionic CLI terinstall
+- [ ] VS Code terinstall dengan extensions
+- [ ] Bisa membuat project baru
+- [ ] `ionic serve` berjalan tanpa error
+- [ ] Browser membuka aplikasi di localhost:8100
+
+## Resources
+
+### Documentation
+- [Ionic Docs](https://ionicframework.com/docs)
+- [Angular Docs](https://angular.io/docs)
+- [Capacitor Docs](https://capacitorjs.com/docs)
+
+### Learning
+- [Ionic YouTube Channel](https://youtube.com/c/IonicFramework)
+- [Ionic Blog](https://ionicframework.com/blog)
+
+### Community
+- [Ionic Forum](https://forum.ionicframework.com/)
+- [Ionic Discord](https://ionic.link/discord)
+- [Stack Overflow tag: ionic-framework](https://stackoverflow.com/questions/tagged/ionic-framework)
+
+---
+
+**Selamat!** Environment Anda sudah siap untuk development. Lanjut ke Module 03 untuk membuat aplikasi pertama! 🎉

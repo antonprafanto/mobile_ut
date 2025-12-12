@@ -1,0 +1,529 @@
+# HTTP & Data Management
+
+Aplikasi mobile modern berkomunikasi dengan backend API. Module ini mengajarkan cara fetch data, handle loading states, dan manage aplikasi data.
+
+## HttpClient Setup
+
+```typescript
+// app.config.ts atau main.ts
+import { provideHttpClient } from '@angular/common/http';
+
+export const appConfig = {
+  providers: [
+    provideHttpClient(),
+    // ... other providers
+  ]
+};
+```
+
+## Basic HTTP Requests
+
+### GET Request
+
+```typescript
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProductService {
+  private apiUrl = 'https://api.example.com/products';
+
+  constructor(private http: HttpClient) {}
+
+  getProducts(): Observable<Product[]> {
+    return this.http.get<Product[]>(this.apiUrl);
+  }
+
+  getProduct(id: number): Observable<Product> {
+    return this.http.get<Product>(`${this.apiUrl}/${id}`);
+  }
+}
+```
+
+### POST Request
+
+```typescript
+createProduct(product: Partial<Product>): Observable<Product> {
+  return this.http.post<Product>(this.apiUrl, product);
+}
+
+// With headers
+createProduct(product: Partial<Product>): Observable<Product> {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  };
+
+  return this.http.post<Product>(this.apiUrl, product, { headers });
+}
+```
+
+### PUT/PATCH Request
+
+```typescript
+// PUT - Replace entire resource
+updateProduct(id: number, product: Product): Observable<Product> {
+  return this.http.put<Product>(`${this.apiUrl}/${id}`, product);
+}
+
+// PATCH - Partial update
+patchProduct(id: number, changes: Partial<Product>): Observable<Product> {
+  return this.http.patch<Product>(`${this.apiUrl}/${id}`, changes);
+}
+```
+
+### DELETE Request
+
+```typescript
+deleteProduct(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.apiUrl}/${id}`);
+}
+```
+
+## Using in Components
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { LoadingController, ToastController } from '@ionic/angular';
+
+export class ProductsPage implements OnInit {
+  products: Product[] = [];
+  loading = false;
+  error: string | null = null;
+
+  constructor(
+    private productService: ProductService,
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
+  ) {}
+
+  ngOnInit() {
+    this.loadProducts();
+  }
+
+  async loadProducts() {
+    const loading = await this.loadingCtrl.create({
+      message: 'Loading products...'
+    });
+    await loading.present();
+
+    this.productService.getProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+        loading.dismiss();
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.showError('Failed to load products');
+        loading.dismiss();
+      }
+    });
+  }
+
+  async showError(message: string) {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 3000,
+      color: 'danger'
+    });
+    await toast.present();
+  }
+}
+```
+
+## Error Handling
+
+### HTTP Interceptor
+
+```typescript
+// http-error.interceptor.ts
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
+import { ToastController } from '@ionic/angular';
+
+export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
+  const toastCtrl = inject(ToastController);
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      let errorMessage = 'An error occurred';
+
+      if (error.error instanceof ErrorEvent) {
+        // Client-side error
+        errorMessage = `Error: ${error.error.message}`;
+      } else {
+        // Server-side error
+        switch (error.status) {
+          case 400:
+            errorMessage = 'Bad Request';
+            break;
+          case 401:
+            errorMessage = 'Unauthorized';
+            break;
+          case 403:
+            errorMessage = 'Forbidden';
+            break;
+          case 404:
+            errorMessage = 'Not Found';
+            break;
+          case 500:
+            errorMessage = 'Server Error';
+            break;
+          default:
+            errorMessage = `Error Code: ${error.status}`;
+        }
+      }
+
+      // Show toast
+      toastCtrl.create({
+        message: errorMessage,
+        duration: 3000,
+        color: 'danger'
+      }).then(toast => toast.present());
+
+      return throwError(() => error);
+    })
+  );
+};
+
+// Register in app.config.ts
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+
+export const appConfig = {
+  providers: [
+    provideHttpClient(
+      withInterceptors([httpErrorInterceptor])
+    )
+  ]
+};
+```
+
+### Auth Interceptor
+
+```typescript
+// auth.interceptor.ts
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
+  const token = authService.getToken();
+
+  if (token) {
+    req = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+
+  return next(req);
+};
+```
+
+## RxJS Operators
+
+```typescript
+import { map, filter, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+
+// Transform data
+getProducts(): Observable<Product[]> {
+  return this.http.get<any[]>(this.apiUrl).pipe(
+    map(products => products.map(p => ({
+      ...p,
+      price: p.price * 1.1 // Add 10% markup
+    })))
+  );
+}
+
+// Filter results
+getExpensiveProducts(): Observable<Product[]> {
+  return this.http.get<Product[]>(this.apiUrl).pipe(
+    map(products => products.filter(p => p.price > 1000000))
+  );
+}
+
+// Search with debounce
+searchProducts(searchTerm: string): Observable<Product[]> {
+  return of(searchTerm).pipe(
+    debounceTime(300), // Wait 300ms after last keystroke
+    distinctUntilChanged(), // Only if value changed
+    switchMap(term => 
+      this.http.get<Product[]>(`${this.apiUrl}/search?q=${term}`)
+    )
+  );
+}
+```
+
+## Caching
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class ProductService {
+  private cache = new Map<string, any>();
+  private cacheTime = 5 * 60 * 1000; // 5 minutes
+
+  getProducts(refresh = false): Observable<Product[]> {
+    const cacheKey = 'products';
+    const cached = this.cache.get(cacheKey);
+
+    if (!refresh && cached && Date.now() - cached.timestamp < this.cacheTime) {
+      return of(cached.data);
+    }
+
+    return this.http.get<Product[]>(this.apiUrl).pipe(
+      tap(products => {
+        this.cache.set(cacheKey, {
+          data: products,
+          timestamp: Date.now()
+        });
+      })
+    );
+  }
+
+  clearCache() {
+    this.cache.clear();
+  }
+}
+```
+
+## State Management with BehaviorSubject
+
+```typescript
+import { BehaviorSubject, Observable } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class CartService {
+  private cartItems$ = new BehaviorSubject<Product[]>([]);
+
+  get items$(): Observable<Product[]> {
+    return this.cartItems$.asObservable();
+  }
+
+  get items(): Product[] {
+    return this.cartItems$.value;
+  }
+
+  addItem(product: Product) {
+    const currentItems = this.cartItems$.value;
+    this.cartItems$.next([...currentItems, product]);
+  }
+
+  removeItem(productId: number) {
+    const currentItems = this.cartItems$.value;
+    this.cartItems$.next(
+      currentItems.filter(item => item.id !== productId)
+    );
+  }
+
+  clearCart() {
+    this.cartItems$.next([]);
+  }
+
+  get totalPrice(): number {
+    return this.items.reduce((sum, item) => sum + item.price, 0);
+  }
+}
+
+// Usage in component
+export class CartPage {
+  cartItems$ = this.cartService.items$;
+  
+  constructor(private cartService: CartService) {}
+
+  get total$(): Observable<number> {
+    return this.cartItems$.pipe(
+      map(items => items.reduce((sum, item) => sum + item.price, 0))
+    );
+  }
+}
+```
+
+## API Service Pattern
+
+```typescript
+// base-api.service.ts
+export abstract class BaseApiService<T> {
+  protected abstract apiUrl: string;
+
+  constructor(protected http: HttpClient) {}
+
+  getAll(): Observable<T[]> {
+    return this.http.get<T[]>(this.apiUrl);
+  }
+
+  getById(id: number): Observable<T> {
+    return this.http.get<T>(`${this.apiUrl}/${id}`);
+  }
+
+  create(item: Partial<T>): Observable<T> {
+    return this.http.post<T>(this.apiUrl, item);
+  }
+
+  update(id: number, item: Partial<T>): Observable<T> {
+    return this.http.put<T>(`${this.apiUrl}/${id}`, item);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+}
+
+// product.service.ts
+@Injectable({ providedIn: 'root' })
+export class ProductService extends BaseApiService<Product> {
+  protected apiUrl = 'https://api.example.com/products';
+
+  // Additional specific methods
+  getFeatured(): Observable<Product[]> {
+    return this.http.get<Product[]>(`${this.apiUrl}/featured`);
+  }
+}
+```
+
+## Pagination
+
+```typescript
+export interface PaginatedResponse<T> {
+  data: T[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProductService {
+  getProducts(page: number = 1, limit: number = 10): Observable<PaginatedResponse<Product>> {
+    return this.http.get<PaginatedResponse<Product>>(
+      `${this.apiUrl}?page=${page}&limit=${limit}`
+    );
+  }
+}
+
+// In component
+export class ProductsPage {
+  products: Product[] = [];
+  currentPage = 1;
+  totalPages = 1;
+  loading = false;
+
+  async loadMore(event?: any) {
+    if (this.loading || this.currentPage >= this.totalPages) {
+      event?.target.complete();
+      return;
+    }
+
+    this.loading = true;
+    this.currentPage++;
+
+    this.productService.getProducts(this.currentPage).subscribe({
+      next: (response) => {
+        this.products = [...this.products, ...response.data];
+        this.totalPages = response.totalPages;
+        this.loading = false;
+        event?.target.complete();
+      },
+      error: () => {
+        this.loading = false;
+        event?.target.complete();
+      }
+    });
+  }
+}
+```
+
+```html
+<ion-content>
+  <ion-list>
+    <ion-item *ngFor="let product of products">
+      {{ product.name }}
+    </ion-item>
+  </ion-list>
+
+  <ion-infinite-scroll (ionInfinite)="loadMore($event)">
+    <ion-infinite-scroll-content
+      loadingText="Loading more..."
+      loadingSpinner="bubbles">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
+```
+
+## Offline Support
+
+```typescript
+import { Network } from '@capacitor/network';
+
+@Injectable({ providedIn: 'root' })
+export class OfflineService {
+  private isOnline = true;
+
+  constructor() {
+    this.initNetworkMonitor();
+  }
+
+  async initNetworkMonitor() {
+    const status = await Network.getStatus();
+    this.isOnline = status.connected;
+
+    Network.addListener('networkStatusChange', status => {
+      this.isOnline = status.connected;
+      
+      if (this.isOnline) {
+        this.syncOfflineData();
+      }
+    });
+  }
+
+  // Queue requests when offline
+  private offlineQueue: any[] = [];
+
+  queueRequest(request: any) {
+    this.offlineQueue.push(request);
+    localStorage.setItem('offlineQueue', JSON.stringify(this.offlineQueue));
+  }
+
+  async syncOfflineData() {
+    const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+    
+    for (const request of queue) {
+      try {
+        await this.executeRequest(request);
+      } catch (error) {
+        console.error('Sync failed:', error);
+      }
+    }
+
+    localStorage.removeItem('offlineQueue');
+    this.offlineQueue = [];
+  }
+}
+```
+
+## Best Practices
+
+1. **Use Services** for all API calls
+2. **Handle Errors** gracefully with user-friendly messages
+3. **Show Loading States** for better UX
+4. **Cache Data** where appropriate
+5. **Unsubscribe** to prevent memory leaks:
+   ```typescript
+   ngOnDestroy() {
+     this.subscription?.unsubscribe();
+   }
+   ```
+6. **Use AsyncPipe** in templates to auto-unsubscribe:
+   ```html
+   <div *ngIf="products$ | async as products">
+     ...
+   </div>
+   ```
+
+---
+
+**Next:** Module 08 - Native Features! 📱
