@@ -71,12 +71,17 @@ jobs:
           # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
+      - name: Clean caches and artifacts
+        run: |
+          rm -rf .next
+          rm -rf node_modules/.cache
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-      - name: Install lightningcss Linux binary
-        run: npm install --force --no-save @lightningcss/linux-x64-gnu
+        run: npm ci --force
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
