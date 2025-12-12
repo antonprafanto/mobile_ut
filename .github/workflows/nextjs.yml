@@ -73,8 +73,8 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-      - name: Rebuild native modules
-        run: npm rebuild lightningcss --force
+      - name: Install lightningcss Linux binary
+        run: npm install --force --no-save @lightningcss/linux-x64-gnu
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Upload artifact
