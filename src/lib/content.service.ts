@@ -17,7 +17,8 @@ export class ContentService {
 
         try {
             // Load MDX file
-            const response = await fetch(`/content/modules/${slug}.mdx`);
+            const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+            const response = await fetch(`${basePath}/content/modules/${slug}.mdx`);
 
             if (!response.ok) {
                 throw new Error(`Failed to load content for ${slug}`);
